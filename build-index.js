@@ -1,12 +1,14 @@
 // 完成済みゲーム（games/NNN-slug/index.html が存在するもの）だけを載せた index.html を生成する。
+// git 管理下（レビュー済みでコミット済み）のものだけを対象にする。
 // 使い方: node build-index.js
 const fs = require('fs');
 const path = require('path');
 const games = JSON.parse(fs.readFileSync(path.join(__dirname, 'games.json'), 'utf8'));
+const tracked = new Set(require('child_process').execSync('git ls-files games', { cwd: __dirname }).toString().split('\n'));
 const esc = s => s.replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 const done = games
   .map(g => ({ ...g, dir: `games/${String(g.id).padStart(3, '0')}-${g.slug}` }))
-  .filter(g => fs.existsSync(path.join(__dirname, g.dir, 'index.html')));
+  .filter(g => tracked.has(`${g.dir}/index.html`));
 
 const cards = done.map(g => `
     <a class="card" href="${g.dir}/index.html">
