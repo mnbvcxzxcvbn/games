@@ -1,0 +1,1051 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>神様の受付窓口</title>
+<style>
+:root{
+  --paper:#f7f0dd; --paper2:#efe5c9; --ink:#27325a; --ink2:#5b6488; --red:#c8372d; --gold:#b98f1f; --gold2:#f1d684;
+  --navy:#172042; --line:rgba(39,50,90,.38);
+  --min:"Hiragino Mincho ProN","Yu Mincho","YuMincho","Noto Serif CJK JP","Noto Serif JP","BIZ UDMincho",serif;
+  --got:"Hiragino Kaku Gothic ProN","Yu Gothic","YuGothic","Noto Sans CJK JP","Noto Sans JP",Meiryo,sans-serif;
+  --cw:340px; --ch:470px; --fs:19px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;overflow:hidden;background:#cfe6f4;color:var(--ink);font-family:var(--got);-webkit-tap-highlight-color:transparent}
+button{font-family:inherit;color:inherit;border:0;background:none;cursor:pointer}
+#app{position:fixed;inset:0;overflow:hidden;user-select:none;-webkit-user-select:none}
+canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
+#fx{pointer-events:none;z-index:30}
+#back{position:absolute;left:10px;top:8px;z-index:40;font-size:12px;color:var(--ink);text-decoration:none;background:rgba(255,255,255,.72);padding:3px 9px;border-radius:99px;border:1px solid var(--line)}
+#back:hover{background:#fff}
+.scr{position:absolute;inset:0;display:none;z-index:10}
+.scr.on{display:flex}
+
+/* ───────── タイトル ───────── */
+#title{flex-direction:column;align-items:center;justify-content:center;padding:44px 16px 20px;text-align:center;gap:clamp(8px,2vh,18px);overflow:hidden}
+.board{background:var(--navy);color:#ffb341;border-radius:6px;padding:7px 16px 6px;font-size:12px;letter-spacing:.12em;border:2px solid #0c1228;box-shadow:0 3px 0 #0c1228,0 10px 24px rgba(23,32,66,.25);display:flex;align-items:baseline;gap:8px;white-space:nowrap}
+.board b{font:700 clamp(18px,5.4vw,26px)/1 ui-monospace,Menlo,Consolas,monospace;color:#ffd24a;text-shadow:0 0 8px rgba(255,190,60,.7);letter-spacing:.04em}
+#title h1{font:700 clamp(38px,9.5vw,76px)/1.1 var(--min);letter-spacing:.06em;color:var(--ink);text-shadow:0 2px 0 #fff,0 0 28px rgba(255,255,255,.9)}
+.kami{position:relative;display:inline-block;color:var(--red)}
+.kami i{position:absolute;left:50%;top:-.2em;width:.86em;height:.26em;margin-left:-.43em;border:.05em solid var(--gold);border-radius:50%;box-shadow:0 0 14px var(--gold2),inset 0 0 6px var(--gold2);animation:halo 3s ease-in-out infinite}
+@keyframes halo{50%{transform:translateY(-.06em) rotate(-3deg)}}
+.sub{font:600 12px/1 var(--got);letter-spacing:.5em;color:var(--ink2);margin-bottom:-4px;padding-left:.5em}
+.lead{font:500 clamp(13px,3.5vw,18px)/1.75 var(--min);color:var(--ink)}
+.lead b.r{color:var(--red)}.lead b.b{color:var(--ink);border-bottom:2px solid var(--ink)}
+.how{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;max-width:660px}
+.how span{background:rgba(255,255,255,.78);border:1px solid var(--line);border-radius:4px;padding:6px 11px;font-size:12.5px;line-height:1.5}
+.how kbd{font:700 12px var(--got);border:1px solid var(--ink);border-bottom-width:2px;border-radius:3px;padding:0 5px;background:#fff}
+#start{position:relative;font:700 clamp(20px,5vw,26px)/1 var(--min);letter-spacing:.3em;padding:17px 34px 17px 46px;color:#fff;background:var(--red);border-radius:4px;box-shadow:0 5px 0 #8f211a,0 14px 26px rgba(200,55,45,.35);transition:transform .08s,box-shadow .08s}
+#start:hover{transform:translateY(-2px);box-shadow:0 7px 0 #8f211a,0 18px 30px rgba(200,55,45,.4)}
+#start:active{transform:translateY(4px);box-shadow:0 1px 0 #8f211a}
+#rec{font-size:12px;color:var(--ink2);line-height:1.7;min-height:1.7em}
+.deco{position:absolute;width:210px;height:270px;background:var(--paper);border-radius:3px;box-shadow:0 12px 30px rgba(39,50,90,.22);padding:16px 16px;font:500 14px/1.8 var(--min);text-align:left;pointer-events:none}
+.deco h4{font:700 13px var(--min);letter-spacing:.4em;text-align:center;border-bottom:3px double var(--line);padding-bottom:6px;margin-bottom:10px}
+.deco small{display:block;font:11px var(--got);color:var(--ink2);border-bottom:1px solid var(--line);margin-bottom:8px;padding-bottom:4px}
+.deco.d1{left:calc(50% - 560px);top:20%;transform:rotate(-9deg);animation:dfl 7s ease-in-out infinite}
+.deco.d2{right:calc(50% - 560px);top:34%;transform:rotate(7deg);animation:dfl 8s ease-in-out -3s infinite}
+@keyframes dfl{50%{translate:0 -12px}}
+.deco .stamp{opacity:1;top:auto;bottom:22px}
+@media(max-width:1080px){.deco{display:none}}
+
+/* ───────── ゲーム画面 ───────── */
+#game{display:none;grid-template-columns:minmax(0,1fr) 340px;grid-template-rows:auto minmax(0,1fr) auto;grid-template-areas:"hud hud" "stage news" "ctrl news"}
+#game.on{display:grid}
+#hud{grid-area:hud;display:flex;align-items:center;gap:14px;padding:8px 16px 8px 86px;background:linear-gradient(rgba(255,255,255,.9),rgba(255,255,255,.62));border-bottom:1px solid var(--line);backdrop-filter:blur(4px)}
+#plate{font:700 13px/1.25 var(--min);letter-spacing:.1em;white-space:nowrap;border:1px solid var(--ink);padding:5px 10px;background:var(--paper);border-radius:2px}
+#plate b{font:700 15px var(--got);color:var(--red)}
+#ava{position:relative;font-size:26px;line-height:1;width:34px;text-align:center;flex:none}
+#ava:before{content:"";position:absolute;left:50%;top:-5px;width:24px;height:7px;margin-left:-12px;border:2px solid var(--gold);border-radius:50%;box-shadow:0 0 6px var(--gold2)}
+.gs{display:flex;gap:12px;flex:1;min-width:0}
+.g{flex:1;min-width:0;position:relative}
+.g .gl{display:flex;justify-content:space-between;font:700 12px/1.3 var(--got);letter-spacing:.06em;white-space:nowrap}
+.g .gl b{font-variant-numeric:tabular-nums}
+.gb{position:relative;height:13px;border:1.5px solid var(--ink);background:#fff;border-radius:2px;overflow:hidden;margin-top:3px}
+.gb:before,.gb:after{content:"";position:absolute;top:0;bottom:0;width:10%;background:repeating-linear-gradient(135deg,rgba(200,55,45,.5) 0 3px,transparent 3px 6px);z-index:2}
+.gb:before{left:0}.gb:after{right:0}
+#gT .gb:before{display:none}#gT .gb:after{width:15%}
+.gb i{position:absolute;left:0;top:0;bottom:0;width:50%;background:var(--ink);transition:width .5s cubic-bezier(.2,1.4,.4,1),background .3s}
+#gF .gb i{background:#7a5bb0}#gH .gb i{background:#3f9a6c}#gT .gb i{background:#c98a2b}
+.g.warn .gb{animation:warn .5s steps(2) infinite}.g.warn .gl{color:var(--red)}
+@keyframes warn{50%{border-color:var(--red);box-shadow:0 0 0 2px rgba(200,55,45,.35)}}
+.dl{position:absolute;right:28px;top:-3px;font:800 13.5px/1.35 var(--got);background:rgba(255,255,255,.94);border-radius:99px;padding:0 6px;box-shadow:0 1px 3px rgba(39,50,90,.25);z-index:3;pointer-events:none;animation:dl 1.1s ease-out forwards;text-shadow:0 1px 0 #fff,0 0 4px #fff}
+.dl.up{color:#1d8a4e}.dl.dn{color:var(--red)}
+@keyframes dl{0%{transform:translateY(9px) scale(.6);opacity:0}18%{transform:translateY(0) scale(1.3);opacity:1}70%{transform:translateY(0) scale(1);opacity:1}100%{transform:translateY(-3px);opacity:0}}
+
+#news{grid-area:news;margin:14px 16px 16px 0;background:var(--navy);border-radius:10px;border:3px solid #0c1228;box-shadow:0 10px 30px rgba(23,32,66,.35),inset 0 0 40px rgba(80,120,220,.18);color:#f3ecd8;display:flex;flex-direction:column;overflow:hidden;position:relative;transition:filter 1.5s}
+#news:after{content:"";position:absolute;inset:0;background:repeating-linear-gradient(rgba(255,255,255,.035) 0 1px,transparent 1px 3px);pointer-events:none}
+.nh{display:flex;align-items:center;gap:8px;padding:9px 12px;font:700 14px var(--got);letter-spacing:.12em;border-bottom:1px solid rgba(255,255,255,.16);background:rgba(255,255,255,.05);flex:none}
+.nh small{margin-left:auto;font:600 9px var(--got);letter-spacing:.14em;opacity:.55}
+.live{background:var(--red);color:#fff;padding:2px 7px;border-radius:2px;font-size:11.5px;animation:blink 1.4s steps(2) infinite}
+@keyframes blink{50%{opacity:.55}}
+#nl{list-style:none;flex:1;overflow:hidden;padding:4px 0}
+#nl li{display:flex;gap:9px;padding:9px 12px;border-bottom:1px dashed rgba(255,255,255,.14);animation:nin .45s cubic-bezier(.2,1.3,.4,1);opacity:.62;transition:opacity .4s}
+#nl li:first-child{opacity:1;background:rgba(255,255,255,.07)}
+#nl li.combo:first-child{background:rgba(200,55,45,.3)}
+@keyframes nin{0%{transform:translateY(-22px);opacity:0}}
+.ne{font-size:25px;line-height:1.15;flex:none;width:30px;text-align:center}
+.nt p{font:500 13.5px/1.55 var(--got)}
+.nt p b{background:#ffd24a;color:var(--navy);font-size:10.5px;padding:1px 5px;border-radius:2px;margin-right:5px;vertical-align:1px}
+.chips{display:flex;gap:5px;margin-top:4px;flex-wrap:wrap}
+.chips i{font:700 10.5px var(--got);font-style:normal;padding:1px 6px;border-radius:99px;background:rgba(255,255,255,.12)}
+.chips i.up{color:#8ff0b6}.chips i.dn{color:#ff9d92}
+.nempty{padding:18px 14px;font-size:12.5px;opacity:.55;line-height:1.8}
+
+#stage{grid-area:stage;position:relative;min-height:0}
+#stage.shake{animation:shake .2s linear}
+@keyframes shake{20%{transform:translate(-5px,3px)}40%{transform:translate(5px,-3px)}60%{transform:translate(-3px,-2px)}80%{transform:translate(2px,2px)}}
+.side{position:absolute;top:50%;font:700 clamp(40px,7vw,84px)/1 var(--min);writing-mode:vertical-rl;letter-spacing:.2em;opacity:.13;transform:translateY(-50%);transition:opacity .15s,transform .15s;pointer-events:none}
+.side.l{left:max(8px,calc(50% - var(--cw)/2 - 150px));color:var(--ink)}
+.side.r{right:max(8px,calc(50% - var(--cw)/2 - 150px));color:var(--red)}
+#stage[data-dir="-1"] .side.l,#stage[data-dir="1"] .side.r{opacity:.85;transform:translateY(-50%) scale(1.12)}
+#pile i{position:absolute;left:50%;top:50%;width:var(--cw);height:var(--ch);margin:calc(var(--ch)/-2) 0 0 calc(var(--cw)/-2);background:var(--paper2);border-radius:4px;box-shadow:0 2px 6px rgba(39,50,90,.2)}
+#pile i:nth-child(1){transform:rotate(3.2deg) translate(6px,7px)}
+#pile i:nth-child(2){transform:rotate(-2.2deg) translate(-4px,4px);background:#f2e9d0}
+#cards{position:absolute;inset:0}
+.card{position:absolute;left:50%;top:50%;width:var(--cw);height:var(--ch);margin:calc(var(--ch)/-2) 0 0 calc(var(--cw)/-2);
+  background:var(--paper) linear-gradient(rgba(255,255,255,.5),rgba(255,255,255,0) 30%);border-radius:4px;
+  box-shadow:0 1px 0 #fff inset,0 10px 26px rgba(39,50,90,.28),0 2px 4px rgba(39,50,90,.2);padding:14px 16px 12px;display:flex;flex-direction:column;
+  touch-action:none;cursor:grab;will-change:transform;color:var(--ink)}
+.card.drag{cursor:grabbing;box-shadow:0 1px 0 #fff inset,0 26px 50px rgba(39,50,90,.34),0 4px 8px rgba(39,50,90,.2)}
+.ch{position:relative;text-align:center;padding-bottom:7px;border-bottom:3px double var(--ink)}
+.ch h3{font:700 19px/1.3 var(--min);letter-spacing:.5em;padding-left:.5em;margin-top:13px}
+.cno,.cfm{position:absolute;top:-3px;font:500 10px/1 var(--got);color:var(--ink2);letter-spacing:.04em}
+.cno{left:0}.cfm{right:0}
+.cm{display:grid;grid-template-columns:58px 1fr;font-size:13px;margin-top:9px;border:1px solid var(--ink)}
+.cm dt{background:rgba(39,50,90,.09);border-right:1px solid var(--ink);padding:5px 0;text-align:center;font-weight:700;font-size:11.5px;letter-spacing:.1em}
+.cm dd{padding:5px 8px;font-family:var(--min);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cm dt:nth-child(-n+2),.cm dd:nth-child(-n+2){border-bottom:1px solid var(--ink)}
+.tag{display:inline-block;margin-left:8px;font:800 10.5px/1 var(--got);color:var(--red);border:1.5px solid var(--red);padding:2px 5px;border-radius:2px;transform:rotate(-3deg);letter-spacing:.06em}
+.cb{flex:1;min-height:0;display:flex;align-items:center;padding:6px 4px}
+.cb p{font:600 var(--fs)/1.8 var(--min);text-align:left;width:100%;transition:filter .6s;background:repeating-linear-gradient(transparent 0 calc(1.8em - 1px),rgba(39,50,90,.16) calc(1.8em - 1px) 1.8em)}
+.cf{display:flex;align-items:flex-end;justify-content:space-between;border-top:1px solid var(--ink);padding-top:7px}
+.cfn{font-size:10.5px;color:var(--ink2);line-height:1.5;letter-spacing:.02em}
+.hk{display:flex}
+.hk i{width:38px;height:40px;border:1px solid var(--ink);margin-left:-1px;font:600 9px/1 var(--got);font-style:normal;text-align:center;padding-top:3px;color:var(--ink2);position:relative}
+.hk i.done:after{content:"課長";position:absolute;left:50%;bottom:3px;width:22px;height:22px;margin-left:-11px;border:1.5px solid var(--red);border-radius:50%;color:var(--red);font:700 8px/19px var(--min);transform:rotate(-12deg);opacity:.8}
+.stamp{position:absolute;top:44%;opacity:0;pointer-events:none;font-family:var(--min);font-weight:800;mix-blend-mode:multiply}
+.stamp.ok{right:20px;width:112px;height:112px;margin-top:-56px;border:5px double var(--red);border-radius:50%;color:var(--red);transform:rotate(-14deg);display:flex;align-items:center;justify-content:center;font-size:33px;letter-spacing:.08em;background:radial-gradient(rgba(200,55,45,.08),rgba(200,55,45,.02))}
+.stamp.ok:after{content:"天界祈願課";position:absolute;bottom:13px;left:0;right:0;text-align:center;font-size:9px;letter-spacing:.14em}
+.stamp.ok span{margin-top:-8px}
+.stamp.ng{left:18px;margin-top:-34px;border:5px solid var(--ink);color:var(--ink);padding:5px 15px 6px;font-size:35px;letter-spacing:.14em;transform:rotate(11deg);border-radius:5px;background:rgba(39,50,90,.05)}
+.stamp.hit{animation:hit .17s cubic-bezier(.2,2.2,.5,1) both}
+@keyframes hit{0%{scale:2.6;opacity:0}55%{scale:.9;opacity:1}100%{scale:1;opacity:1}}
+.tbar{position:absolute;left:0;right:0;top:0;height:5px;border-radius:4px 4px 0 0;overflow:hidden;display:none}
+.tbar i{display:block;height:100%;width:100%;background:var(--gold);transform-origin:left}
+.card.timed .tbar{display:block}.card.hurry .tbar i{background:var(--red)}
+.card.naisen{background-color:#e3edf4}
+.card.naisen .ch{border-bottom-style:solid;border-bottom-width:2px}
+.card.naisen .ch h3{letter-spacing:.3em}
+.card.naisen .cb{background-image:radial-gradient(rgba(39,50,90,.16) 1px,transparent 1.2px);background-size:14px 14px}
+.card.naisen .cb p{background:none}
+.card.jirei{background-color:#fffaf0;border:1px solid var(--gold)}
+.card.jirei .ch h3{font-size:27px;letter-spacing:1em;padding-left:1em}
+.card.final{background:#ead9a6 radial-gradient(circle at 30% 20%,rgba(255,255,255,.55),rgba(160,110,40,.18));box-shadow:0 0 0 1px rgba(150,110,40,.5),0 0 60px 12px rgba(255,214,120,.75),0 14px 34px rgba(39,30,10,.4);color:#3c2f1c}
+.card.final .cb p{font-style:italic;letter-spacing:.03em}
+.card.final .tag{color:#7a4a17;border-color:#7a4a17}
+body.tired1 .card:not(.final) .cb p{filter:blur(.35px)}
+body.tired2 .card:not(.final) .cb p{filter:blur(.55px);text-shadow:2px 0 0 rgba(39,50,90,.28);animation:sway 3.2s ease-in-out infinite}
+@keyframes sway{50%{transform:translateX(3px) skewX(-1.5deg)}}
+#banner{position:absolute;left:0;right:0;top:50%;transform:translateY(-50%) scaleY(0);background:var(--navy);color:#fff;text-align:center;padding:16px 10px;z-index:8;pointer-events:none;opacity:0;border-top:3px solid var(--gold);border-bottom:3px solid var(--gold)}
+#banner.on{animation:ban 1.7s ease both}
+@keyframes ban{0%{transform:translateY(-50%) scaleY(0);opacity:0}12%,82%{transform:translateY(-50%) scaleY(1);opacity:1}100%{transform:translateY(-50%) scaleY(0);opacity:0}}
+#banner b{display:block;font:700 clamp(22px,5vw,34px)/1.3 var(--min);letter-spacing:.3em;padding-left:.3em}
+#banner small{font-size:12.5px;letter-spacing:.14em;color:var(--gold2)}
+#toast{position:absolute;left:50%;bottom:8px;transform:translate(-50%,20px);background:rgba(23,32,66,.93);color:#fff;font-size:13px;line-height:1.5;padding:8px 14px;border-radius:4px;opacity:0;transition:opacity .3s,transform .3s;pointer-events:none;z-index:9;max-width:92%;text-align:center;width:max-content}
+#toast.on{opacity:1;transform:translate(-50%,0)}
+#ctrl{grid-area:ctrl;display:flex;align-items:center;justify-content:center;gap:16px;padding:6px 14px 16px}
+#ctrl button{font:700 17px/1 var(--min);letter-spacing:.16em;padding:14px 0;width:142px;border-radius:4px;transition:transform .07s,box-shadow .07s;white-space:nowrap}
+#bNg{background:var(--paper);color:var(--ink);border:2.5px solid var(--ink);box-shadow:0 4px 0 var(--ink)}
+#bOk{background:var(--red);color:#fff;border:2.5px solid #8f211a;box-shadow:0 4px 0 #8f211a}
+#ctrl button:active,#ctrl button.pr{transform:translateY(4px);box-shadow:0 0 0 var(--ink)}
+#cnt{font:700 11.5px/1.5 var(--got);text-align:center;min-width:70px;color:var(--ink);text-shadow:0 0 6px #fff,0 0 6px #fff}
+#cnt b{font-size:15px}
+body.dusk #news{filter:brightness(.55) saturate(.6)}
+body.dusk #hud{background:rgba(255,255,255,.55)}
+
+@media(max-width:820px){
+  #game{grid-template-columns:minmax(0,1fr);grid-template-rows:auto auto minmax(0,1fr) auto;grid-template-areas:"hud" "news" "stage" "ctrl"}
+  #hud{flex-wrap:wrap;padding:6px 10px 7px;gap:5px 8px;justify-content:flex-end}
+  #plate{font-size:11px;padding:3px 8px;margin-left:70px;margin-right:auto}
+  #plate b{font-size:13px}
+  #ava{font-size:21px;width:28px}#ava:before{width:20px;margin-left:-10px;top:-4px;height:6px}
+  .gs{flex:0 0 100%;gap:8px;order:3}
+  .g .gl{font-size:11px}.gb{height:10px}
+  #news{margin:6px 8px 0;border-width:2px;border-radius:7px;height:88px}
+  .nh{display:none}
+  #nl{padding:0}
+  #nl li{padding:7px 10px 6px;border:0}
+  #nl li:not(:first-child){display:none}
+  .ne{font-size:22px;width:26px}
+  .nt p{font-size:12px;line-height:1.4}
+  .chips{margin-top:2px}
+  .nempty{padding:10px 12px;font-size:11.5px;line-height:1.6}
+  .side{display:none}
+  #ctrl{padding:4px 10px 12px;gap:10px}
+  #ctrl button{width:128px;padding:13px 0;font-size:16px}
+}
+
+/* ───────── 結果 ───────── */
+#result{align-items:flex-start;justify-content:center;overflow-y:auto;padding:40px 12px 24px;background:rgba(23,32,66,.55);backdrop-filter:blur(3px)}
+.sheet{position:relative;width:min(880px,100%);margin:auto;background:var(--paper) linear-gradient(rgba(255,255,255,.55),rgba(255,255,255,0) 22%);border-radius:5px;box-shadow:0 24px 70px rgba(10,14,40,.5);padding:20px 26px 20px;display:grid;grid-template-columns:1.12fr 1fr;gap:6px 26px;animation:shin .6s cubic-bezier(.2,1.25,.4,1) both}
+@keyframes shin{0%{transform:translateY(60px) rotate(-2deg);opacity:0}}
+.sheet:before{content:"";position:absolute;inset:7px;border:1px solid var(--line);pointer-events:none;border-radius:3px}
+.sh{grid-column:1/-1;text-align:center;border-bottom:3px double var(--ink);padding-bottom:8px;margin-bottom:6px;position:relative}
+.sh h2{font:700 17px var(--min);letter-spacing:.7em;padding-left:.7em}
+.sh small{position:absolute;right:0;top:0;font-size:10px;color:var(--ink2)}
+.sh span{position:absolute;left:0;top:0;font-size:10px;color:var(--ink2)}
+.rl{display:flex;flex-direction:column;align-items:center;text-align:center;position:relative}
+.rart{font-size:clamp(46px,9vw,68px);line-height:1.15;letter-spacing:.05em;filter:drop-shadow(0 6px 8px rgba(39,50,90,.25));animation:artin .8s .25s cubic-bezier(.2,1.6,.4,1) both}
+@keyframes artin{0%{transform:scale(.3) rotate(-14deg);opacity:0}}
+.rk{font:600 11.5px var(--got);letter-spacing:.3em;color:var(--ink2);margin-top:4px}
+.rt{font:800 clamp(27px,6.2vw,42px)/1.25 var(--min);color:var(--red);margin:2px 0 8px;letter-spacing:.04em}
+.rd{font:500 14.5px/1.85 var(--min);text-align:left}
+.rq{margin-top:9px;align-self:stretch;text-align:left;font:600 13px/1.6 var(--got);background:rgba(39,50,90,.08);border-left:4px solid var(--ink);padding:7px 10px;border-radius:0 3px 3px 0}
+.seal{position:absolute;right:-4px;top:2px;width:76px;height:76px;border:4px double var(--red);border-radius:50%;color:var(--red);font:800 15px/1.15 var(--min);display:flex;align-items:center;justify-content:center;transform:rotate(14deg);mix-blend-mode:multiply;animation:hit .25s .9s cubic-bezier(.2,2.2,.5,1) both;text-align:center}
+.rr{display:flex;flex-direction:column;gap:8px;min-width:0}
+.rs{display:grid;grid-template-columns:auto 1fr auto;gap:5px 9px;align-items:center;font:700 12.5px var(--got)}
+.rs .gb{margin:0;height:11px}
+.rs .gb i{transition:none}
+.rn{display:grid;grid-template-columns:repeat(4,1fr);border:1px solid var(--ink);text-align:center}
+.rn div{padding:6px 2px;border-right:1px solid var(--ink);font-size:10.5px;color:var(--ink2)}
+.rn div:last-child{border:0}
+.rn b{display:block;font:800 19px/1.2 var(--min);color:var(--ink)}
+.rsc{display:flex;align-items:baseline;justify-content:space-between;border-bottom:2px solid var(--ink);padding-bottom:3px}
+.rsc span{font:700 13px var(--min);letter-spacing:.2em}
+.rsc b{font:800 34px/1 var(--min);color:var(--red)}
+.rsc small{font-size:11px;color:var(--ink2)}
+.dig{background:var(--navy);color:#f3ecd8;border-radius:5px;padding:7px 10px;font-size:11.5px;line-height:1.6}
+.dig h5{font-size:10.5px;letter-spacing:.14em;color:#ffd24a;margin-bottom:2px}
+.dig p{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.col h5{font:700 11px var(--got);letter-spacing:.1em;color:var(--ink2);margin-bottom:4px}
+.eg{display:grid;grid-template-columns:repeat(8,1fr);gap:4px}
+.eg i{aspect-ratio:1;border:1.5px dashed var(--line);border-radius:50%;display:flex;align-items:center;justify-content:center;font-style:normal;font-size:clamp(13px,3.6vw,18px);color:var(--ink2);min-width:0}
+.eg i.got{border:1.5px solid var(--red);background:rgba(200,55,45,.07)}
+.eg i.now{box-shadow:0 0 0 3px var(--gold2),0 0 12px var(--gold);animation:halo 1.4s ease-in-out infinite}
+.rbtn{grid-column:1/-1;display:flex;gap:12px;justify-content:center;margin-top:8px;flex-wrap:wrap}
+.rbtn button{white-space:nowrap;font:700 16px/1 var(--min);letter-spacing:.14em;padding:14px 24px;border-radius:4px;transition:transform .07s,box-shadow .07s}
+#again{background:var(--red);color:#fff;box-shadow:0 4px 0 #8f211a}
+#share{background:#111;color:#fff;box-shadow:0 4px 0 #555}
+.rbtn button:active{transform:translateY(4px);box-shadow:none}
+@media(max-width:720px){
+  #result{padding:38px 8px 16px}
+  .sheet{grid-template-columns:1fr;padding:16px 16px 16px;gap:8px}
+  .rd{font-size:13.5px;line-height:1.75}
+  .seal{width:62px;height:62px;font-size:12.5px;right:-6px;top:-2px}
+  .rbtn button{padding:13px 8px;font-size:15px;flex:1;letter-spacing:.08em}
+  .sh h2{margin-top:16px}
+  .dig p{white-space:normal;padding-left:1.5em;text-indent:-1.5em}
+}
+#fade{position:absolute;inset:0;z-index:35;background:rgba(18,20,48,.0);pointer-events:none;display:flex;align-items:center;justify-content:center;padding:24px;text-align:center;transition:background .9s}
+#fade.on{background:rgba(18,20,48,.9);pointer-events:auto}
+#fade p{font:600 clamp(17px,4.4vw,25px)/2 var(--min);color:#fff7dc;letter-spacing:.1em;opacity:0;transform:translateY(10px);transition:opacity 1s .5s,transform 1s .5s}
+#fade.on p{opacity:1;transform:none}
+</style>
+</head>
+<body>
+<div id="app">
+<canvas id="bg"></canvas>
+<a id="back" href="../../index.html">← 一覧</a>
+
+<section id="title" class="scr on">
+  <div class="deco d1"><h4>祈願申請書</h4><small>申請者：中学2年・しょう(14)</small>世界を、我が手に。<br>（できれば今週中に）<div class="stamp ng"><span>却下</span></div></div>
+  <div class="deco d2"><h4>祈願申請書</h4><small>申請者：猫・タマ(3)</small>ごはんを、<br>1日5回に。にゃ。<div class="stamp ok"><span>承認</span></div></div>
+  <div class="board"><span>ただいまの待ち人数</span><b id="wait">8,104,332,117</b><span>人</span></div>
+  <p class="sub">天界 祈願課 第三窓口</p>
+  <h1><span class="kami">神<i></i></span>様の受付窓口</h1>
+  <p class="lead">届く祈りを、右へ<b class="r">承認</b>・左へ<b class="b">却下</b>。<br>あなたのハンコひとつで、下界のニュースが変わる。</p>
+  <div class="how">
+    <span>🖐️ 申請書を左右に<b>ドラッグ／スワイプ</b></span>
+    <span>⌨️ <kbd>←</kbd> 却下　<kbd>→</kbd> 承認</span>
+    <span>⚠️ 信仰・幸福・疲労、どれが振り切れても<b>即終了</b></span>
+  </div>
+  <button id="start">出勤する</button>
+  <p id="rec"></p>
+</section>
+
+<section id="game" class="scr">
+  <header id="hud">
+    <div id="plate">第三窓口｜<span id="phn">午前の部</span>　<b id="pn">0</b>/30</div>
+    <div class="gs">
+      <div class="g" id="gF"><div class="gl"><span>🙏 信仰</span><b>50</b></div><div class="gb"><i></i></div></div>
+      <div class="g" id="gH"><div class="gl"><span>🌏 世界の幸福</span><b>50</b></div><div class="gb"><i></i></div></div>
+      <div class="g" id="gT"><div class="gl"><span>💤 神の疲労</span><b>0</b></div><div class="gb"><i></i></div></div>
+    </div>
+    <div id="ava">😇</div>
+  </header>
+  <aside id="news">
+    <div class="nh"><span class="live">速報</span>下界ニュース<small>GEKAI NEWS 24</small></div>
+    <ul id="nl"></ul>
+  </aside>
+  <main id="stage">
+    <div class="side l">却下</div><div class="side r">承認</div>
+    <div id="pile"><i></i><i></i></div>
+    <div id="cards"></div>
+    <div id="banner"></div>
+    <div id="toast"></div>
+  </main>
+  <footer id="ctrl">
+    <button id="bNg">← 却下</button>
+    <div id="cnt">承認 <b id="cOk">0</b><br>却下 <b id="cNg">0</b></div>
+    <button id="bOk">承認 →</button>
+  </footer>
+</section>
+
+<section id="result" class="scr"></section>
+<canvas id="fx"></canvas>
+<div id="fade"><p></p></div>
+</div>
+<script>
+(()=>{'use strict';
+/* ═════════ 祈りデータ ═════════
+   P(id, 申請者, 区分, 文面, 承認[信仰,幸福,疲労,ニュース], 却下[…], {req:必要フラグ, d:遅延, ph:解禁時間帯, tag, end})
+   フラグ: id（処理済）/ id+（承認）/ id-（却下）/ 連鎖ID。 C(連鎖ID, 条件, [信仰,幸福,疲労], 続報) */
+const PR=[],PM={},CB=[];
+function P(id,who,cat,text,a,r,o){const p=Object.assign({id,who,cat,text,a,r},o||{});PR.push(p);PM[id]=p;}
+function C(id,when,fx,news){CB.push({id,when,fx,news});}
+const KY='競合申請',SAI='再申請',KU='苦情',BIN='便乗申請';
+
+// ── 天候
+P('hare','小学3年・ゆうと(8)','天候','あしたの遠足、ぜったい晴れにしてください。てるてる坊主を12体つるしました。',[4,2,3,'☀️ 全国的に快晴。遠足の小学生、おやつ300円を5分で使い切る'],[-3,-1,0,'🌥️ てるてる坊主12体、効果なし。小3が「神はいない」と悟る']);
+P('ame','農家・ごんぞう(71)','天候','あした、雨を降らせてください。畑がカラカラで、大根が泣いとります。',[4,2,3,'🌧️ 恵みの雨。大根、泣きやむ'],[-3,-2,0,'🥀 大根、干からびる。農業組合が「神頼み保険」を新設'],{req:['hare'],d:1,tag:KY});
+C('kitsune0',['hare+','ame+'],[3,3,2],'🦊 晴れなのに雨。全国で「狐の嫁入り」が多発し、狐の婚姻届が殺到');
+C('kumori',['hare-','ame-'],[-1,-2,0],'☁️ 全国的にくもり。遠足も畑も「まあ……うん」という空気に');
+P('kitsune','狐・おこん(2)','恋愛','嫁入り行列が渋滞しています。下界の役所は狐の婚姻届を受けつけてくれません。そちらで受理を。',[2,2,3,'🦊 天界、狐の婚姻届を一括受理。全国の油揚げが品薄に'],[-1,-1,0,'🦊 狐たち、人間に化けて役所に並ぶ。しっぽで全員バレる'],{req:['kitsune0']});
+P('kanbatsu','農家・ごんぞう(71)','天候','雨はまだでしょうか。大根はもう、泣く水分も残っとりません。',[3,-2,4,'⛈️ 3日ぶんの雨がまとめて降る。遠足の思い出、物理的に流される'],[-4,-3,0,'🏜️ ごんぞうさんの畑、砂漠に認定。ラクダの観光が始まる'],{req:['hare+','ame-'],tag:SAI});
+P('ensoku','小学3年・ゆうと(8)','学業','えんそくが中止になりました。かわりに、あしたの算数のテストも中止にしてください。',[3,0,2,'📄 全国の小学校で算数のテスト用紙が消失。困っているのは先生だけ'],[-2,0,0,'😤 ゆうと君、将来の夢を「神をこえる」に変更'],{req:['hare-','ame+'],tag:KU});
+P('yohou','気象予報士・はれやま(39)','仕事','予報が外れ続けています。空に何かしていませんか。するなら事前に連絡をください。',[1,1,2,'📡 天界と気象台に直通電話が開通。予報の語尾が「…と神が言っています」に'],[-1,0,0,'📡 はれやま予報士、明日の天気を「知らん」と発表。的中'],{req:['ame']});
+P('yuki','スキー場支配人・しらゆき(52)','天候','大雪を降らせてください。ゲレンデが芝生で、客がピクニックを始めています。',[3,1,3,'❄️ 記録的大雪。スキー場に行列、リフト2時間待ち'],[-2,0,0,'🧺 スキー場、「日本一寒いピクニック場」に業態変更']);
+P('yuki2','雪国の住民・ゆきお(67)','天候','雪はもう結構です。雪かきで腰が限界です。自宅の玄関がどこか分かりません。',[3,2,2,'🌤️ 雪国に晴れ間。ゆきおさん、3か月ぶりに玄関を発見'],[-3,-2,0,'⛄ ゆきおさん、あきらめて2階の窓から出入りする生活に'],{req:['yuki'],d:1,tag:KY});
+C('yukic',['yuki+','yuki2+'],[2,1,2],'🎿 雪がスキー場にだけ降る。積雪40m、リフトが地下鉄になる');
+P('amao','雨男・あめみや(31)','天候','僕が出かけると必ず雨が降ります。デートのたびにです。体質を治してください。',[2,1,2,'🌈 あめみやさん体質改善。代わりに出かけると頭上に虹が出る。目立つ'],[-1,0,0,'☔ あめみやさん、干ばつ地域から講演依頼が殺到']);
+
+// ── 金運・仕事
+P('takara','会社員・さとう(34)','金運','宝くじ、1等が当たりますように。当たったら会社を辞めます。当たらなくても辞めたいです。',[5,1,4,'💰 さとうさん、1等7億円に当選。翌朝、退職届をスキップで提出'],[-2,0,0,'🎫 さとうさん、300円当選。「まあ神もこんなもんか」']);
+P('takara2','同じ売り場の行列(487名)','金運','前の人と同じく、1等をお願いします。全員ぶん。',[7,-5,6,'💸 1等が488本出る。当選金は1人あたり1万4千円に。売り場で暴動寸前'],[-4,0,0,'🎫 行列、解散。「前の人だけズルい」と神に★1レビュー'],{req:['takara'],d:1,tag:BIN});
+P('inflation','中央銀行総裁・かたぎ(66)','金運','お金の価値が崩壊しました。駄菓子が1本800円です。なかったことにしてください。',[2,6,8,'⏪ 経済、何事もなかったことに。さとうさんは普通に出勤した'],[-3,-5,0,'🍬 駄菓子1本、1万2千円に。子どもたちが駄菓子屋で住宅ローンを組む'],{req:['takara2+'],tag:KU});
+P('satou2','元会社員・さとう(34)','金運','7億円が当たったら親戚が400人に増えました。親戚を減らしてください。',[2,1,3,'👪 さとうさんの親戚、適正人数に。うち本物は6名だった'],[-1,-1,0,'🏝️ さとうさん、無人島を買って逃亡。親戚400人、船で追う'],{req:['takara+']});
+P('gacha','ゲーマー・れお(19)','金運','ガチャで最高レアが出ますように。今月の家賃を、ぜんぶ入れました。',[4,-1,2,'🎰 最高レアが10連で10体。運営会社、「神の不正アクセス」として調査開始'],[-2,-1,0,'🏚️ れお君、爆死。祈る相手を神から大家さんに変更']);
+P('ooya','大家・とくだ(70)','金運','202号室の家賃が入りますように。本人は「神に預けた」と言っています。',[2,1,2,'🏠 れお君、最高レアのアカウントを売却し家賃を完納。ゲームは引退'],[-2,-1,0,'📮 とくださん、家賃の請求書を天界あてに郵送。現在、雲の上を配達中'],{req:['gacha'],tag:KU});
+P('kaigi','会社員・たなか(41)','仕事','明日の会議が中止になりますように。資料が1枚もできていません。',[3,1,2,'🏢 全国の会議室のドアが謎の施錠。会議が消え、なぜか業績が上がる'],[-2,-1,0,'📊 たなかさん、白紙の資料を「余白の美です」と言い張り乗り切る']);
+P('kaigi2','部長・おおた(55)','仕事','会議室が開きません。会議がしたいです。会議だけが生きがいなんです。',[2,-2,2,'🗣️ 会議室が開く。反動で会議は6時間。議題は「なぜ開かなかったか」'],[-1,2,0,'🎣 おおた部長、釣りという新たな生きがいを発見。魚にも議事録を取る'],{req:['kaigi+'],tag:KY});
+P('shukatsu','就活生・みお(21)','仕事','内定をください。御社が第一志望です。（※全社に言っています）',[3,1,2,'💼 みおさん、42社から内定。お断りの電話で声が枯れる'],[-2,-1,0,'💼 みおさん、お祈りメールを42通受信。「祈りたいのはこっち」']);
+P('shacho','社長・かねだ(59)','仕事','優秀な新人が来ますように。給料は上げたくありません。',[2,-1,2,'🏢 かねだ社長の会社に優秀な新人が入社。3日で他社に引き抜かれる'],[-1,1,0,'💴 かねだ社長、しぶしぶ給料を上げる。普通に人が来る'],{req:['shukatsu'],d:2});
+C('shachoc',['shukatsu+','shacho+'],[1,1,0],'👑 みおさん、入社初日に社長より優秀と判明。社長が新人になる');
+P('aoi','新入社員・あおい(23)','仕事','上司が異動になりますように。「俺の若い頃は」が1日40回あります。',[3,1,2,'📦 ごんどう課長、異動。送別会で「俺の若い頃は」を最後に一度だけ許される'],[-2,-1,0,'🗓️ あおいさん、「俺の若い頃は」ビンゴを開発。社内で流行']);
+P('gondo','その上司・ごんどう(50)','仕事','新人が辞めませんように。話しかけ方が分からず、昔話しかできません。',[2,2,2,'🤝 ごんどう課長、昔話をやめて天気の話を習得。新人、定着'],[-2,-1,0,'📼 ごんどう課長、若い頃の話を動画にして配信。再生数4'],{req:['aoi'],d:1,tag:KY});
+C('aoic',['aoi+','gondo+'],[1,2,0],'🪑 上司は異動したが、異動先が新人の隣の席。距離が30cm縮まる');
+P('getsuyo','会社員・のぐち(29)','仕事','月曜日を、この世からなくしてください。',[5,-1,5,'📅 月曜日が消滅。火曜日が「新しい月曜日」として憎まれ始める'],[-2,0,0,'📅 月曜日、今週も定刻どおり到着。のぐちさん、布団と一体化']);
+P('kayou','火曜日(概念)','仕事','最近、みんなの目が冷たいです。月曜さんを返してください。あの人、偉大でした。',[2,2,3,'📅 月曜日が復帰。全人類、一瞬だけ月曜に感謝し、翌週また憎む'],[-2,-2,0,'📅 火曜日、心を病み欠勤。1週間が6日になり給料も6/7に'],{req:['getsuyo+'],tag:KU});
+P('jikan','締切前の漫画家・ほしの(33)','仕事','1日を48時間にしてください。あと40ページあります。',[4,-3,6,'🕰️ 1日が48時間に。締切は延びず、労働時間だけが倍になる'],[-2,0,0,'✒️ ほしの先生、原稿を落とす。担当編集は肩を落とす'],{ph:2});
+P('jikan2','全世界の労働者(34億人)','仕事','1日を24時間に戻してください。いえ、12時間でも結構です。',[4,5,5,'🕛 1日が24時間に復旧。全人類、はじめて「24時間」をありがたがる'],[-5,-6,0,'😵 48時間制2日目。月曜日が体感で4日続く'],{req:['jikan+'],tag:KU});
+P('densha','会社員・いしだ(38)','仕事','満員電車で、今日こそ座れますように。',[2,0,1,'🚃 いしださん着席。直後、目の前に高齢者・妊婦・けが人が同時に立つ'],[-1,0,0,'🚃 いしださん、今日も立ったまま寝る技術を磨く']);
+P('densha2','同じ車両の乗客(214名)','仕事','全員、座れますように。',[5,-3,5,'🚃 全員着席のため列車が全長40kmに。先頭車両はすでに隣の県'],[-3,0,0,'🚃 乗客214名、今日も人間寿司として出荷される'],{req:['densha+'],d:1,tag:BIN});
+P('usui','部長・うすい(53)','健康','髪を、もう一度。',[3,1,2,'💇 うすい部長、突然ふさふさに。全社員が気づかないふりをして社内に緊張走る'],[-1,0,0,'🧢 うすい部長、帽子という答えにたどり着く']);
+
+// ── 恋愛
+P('curse','会社員・みさき(27)','怨恨','元カレの拓也を不幸にしてください。靴下が毎日、片方だけ無くなる程度でいいです。',[3,-2,2,'🧦 拓也さん(29)の靴下、片方だけ消える怪現象。洗濯機メーカーが調査へ'],[-2,1,0,'🧘 みさきさん、祈るのをやめてヨガを始める']);
+P('curse2','会社員・拓也(29)','怨恨','元カノのみさきを不幸にしてください。スマホの充電が常に1%になる程度で。',[3,-2,2,'🔋 みさきさんのスマホ、永遠の1%に。モバイルバッテリー業界が活況'],[-2,1,0,'🏃 拓也さん、祈るのをやめてランニングを始める'],{req:['curse'],d:1,tag:KY});
+C('fukuen',['curse+','curse2+'],[2,4,0],'💞 靴下のない男と充電のない女、コンビニで再会。話が合い、復縁');
+C('kutsushita',['curse+','curse2-'],[0,-1,0],'📸 拓也さん、片足はだしで出勤。みさきさんが充電100%のスマホで撮影し、拡散');
+C('juden',['curse-','curse2+'],[0,-1,0],'📞 みさきさん、充電1%で拓也さんに抗議の電話。「もしも」で切れる');
+C('ikitougou',['curse-','curse2-'],[-3,3,0],'🤝 祈りを却下された元カップル、「神って使えないよね」で意気投合');
+P('kekkon','みさき＆拓也','恋愛','結婚します。式の日は晴れにしてください。あと当日だけ、靴下と充電を返してください。',[4,3,3,'💒 式は快晴。新郎の靴下が両足そろった瞬間、会場が涙'],[-3,-1,0,'☔ 式は土砂降り、新郎は片足はだし。「逆に忘れられない式」と好評'],{req:['fukuen']});
+P('riku','大学生・りく(20)','恋愛','好きな人に既読スルーされています。返信が来ますように。',[3,1,2,'📱 りく君に返信が届く。内容は「だれ？」'],[-2,0,0,'📱 りく君、既読のまま春夏秋冬を一周する見込み']);
+P('yui','大学生・ゆい(20)','恋愛','知らない人から毎日メッセージが来ます。止まりますように。',[2,1,2,'📵 ゆいさんの通知、静かになる。安眠'],[-2,-1,0,'📱 ゆいさん、通知音を「お経」に変更。精神が安定'],{req:['riku'],d:1,tag:KY});
+C('takarac',['takara-','takara2+'],[0,-1,0],'🎫 行列の487名だけ当選し、先頭のさとうさんだけハズレ。さとうさん、売り場で膝から崩れる');
+C('rikuc',['riku+','yui+'],[0,-1,0],'⚡ 返信は届いたが、0.3秒後にブロック。りく君「0.3秒は付き合ってた」');
+P('oshi','アイドルファン・たつや(26)','恋愛','推しと結婚できますように。貯金も人生も全部ささげます。',[4,-3,3,'💍 ファン1名、推しと電撃結婚。残りのファン8万人が喪に服す'],[-2,0,0,'💿 たつやさん、同じCDを100枚買う。結婚はできないが握手は100回']);
+P('oshi2','ファン一同(8万人)','恋愛','抜けがけは不公平です。私たちとも結婚させてください。',[6,-2,6,'💍 推し、8万1人と結婚。婚姻届の重みで役所の床が抜ける'],[-4,1,0,'🕯️ ファン8万人、「推しの幸せが私の幸せ」と唱える修行に入る'],{req:['oshi+'],tag:BIN});
+P('koseki','役所の戸籍係・まじめ(40)','仕事','婚姻届が8万枚届きました。同じ窓口業務のよしみで、助けてください。',[2,2,6,'🤝 天界、役所に天使を派遣。ハンコを押す速度が音速を超え、窓ガラスが割れる'],[-1,-2,0,'📚 まじめさん、8万枚を一人で処理。完了予定は22年後'],{req:['oshi2+']});
+P('orihime','織姫(年齢不詳)','恋愛','年に1回しか会えないのは少なすぎます。月1回にしてください。',[2,1,3,'🎋 七夕が月1回に。短冊の消費量が12倍、笹が絶滅危惧種に'],[-2,-1,0,'🎋 織姫、会えない364日で織った布が月まで届く']);
+P('hikoboshi','彦星(年齢不詳)','恋愛','年1回がちょうどいいです。このままでお願いします。牛の世話もあるので。',[1,0,1,'🐂 彦星、牛と静かな日々を満喫'],[-1,0,0,'🐂 彦星、「牛が、牛が」と言い訳しながら天の川を渡る'],{req:['orihime'],d:1,tag:KY});
+C('oric',['orihime+','hikoboshi+'],[0,-1,0],'🌌 月1で会えることになったが、彦星が毎回「仕事が」と欠席。織姫、布で天の川をふさぐ');
+
+// ── 学業・子ども
+P('goukaku','受験生・けんた(18)','学業','第一志望に合格させてください。勉強はしていません。神頼み一本でいきます。',[5,-1,4,'🎓 けんた君、奇跡の合格。体験記『勉強は不要』がベストセラーに'],[-3,1,0,'📚 けんた君、不合格。しぶしぶ参考書を開く']);
+P('goukaku2','受験生・まなみ(18)','学業','毎日14時間、3年間勉強しました。定員はあと1名だそうです。お願いします。',[4,2,3,'🌸 まなみさん合格。使い切った鉛筆は412本'],[-4,-3,0,'💧 まなみさん不合格。鉛筆412本が泣いている'],{req:['goukaku'],d:1,tag:KY});
+C('goukakuc',['goukaku+','goukaku2+'],[1,0,2],'🏫 定員1名に2名が合格。大学、机をノコギリで半分に切って対応');
+C('uragiri',['goukaku+','goukaku2-'],[-3,-4,0],'😢 神頼みが受かり努力が落ちる。「努力は裏切る」が流行語大賞に');
+C('seigi',['goukaku-','goukaku2+'],[1,3,0],'✏️ けんた君、浪人1日目。生まれてはじめて鉛筆を削り、指を切る');
+P('manami','受験生・まなみ(18)','怨恨','神様を訴えたいです。受付窓口はどちらですか。',[-2,2,3,'⚖️ 史上初「人間 対 神」裁判が開廷。神側は欠席、傍聴席は満員'],[-4,-1,0,'🔥 まなみさん、怒りで無神論の論文を執筆。学会で絶賛される'],{req:['uragiri'],tag:KU});
+P('hon','全国の受験生(52万人)','学業','『勉強は不要』を読みました。全員、合格でお願いします。',[7,-6,7,'🏫 52万人全員合格。講義室が満員電車に。教授は窓の外から講義'],[-5,2,1,'📖 『勉強は不要』返品の山。けんた君、印税を全額返金'],{req:['goukaku+'],tag:BIN});
+P('piman','小学1年・はると(6)','学業','ピーマンを、このよからけしてください。',[3,-2,3,'🫑 ピーマン絶滅。青椒肉絲が「肉絲」になり、中華料理界に激震'],[-1,0,0,'🫑 はると君、鼻をつまんでピーマンを完食。母、泣く']);
+P('piman2','ピーマン農家・のぼる(48)','仕事','ピーマンが消えて一家で路頭に迷っています。パプリカは残っているのが余計に腹立たしいです。',[3,2,3,'🫑 ピーマン復活。なぜか前より苦い'],[-3,-2,0,'🎨 のぼるさん、パプリカに緑のペンキを塗って出荷。御用'],{req:['piman+'],tag:KU});
+P('piman3','小学1年・はると(6)','学業','ピーマンがもどってきました。かみさまはうそつきです。にんじんもけしてください。',[2,-2,3,'🥕 にんじん絶滅。馬が走らなくなり、競馬が徒歩に'],[-2,0,0,'🥕 はると君、にんじんをピーマンで隠して食べる技を開発'],{req:['piman2+'],tag:SAI});
+P('natsu','小学6年・かいと(12)','学業','夏休みを、えいえんにしてください。宿題はやりません。',[4,-2,5,'🏖️ 夏休みが永遠に。8月31日が今日で412回目。子どもたち、逆に飽きる'],[-2,0,0,'📓 かいと君、8月31日の夜に絵日記40日ぶんを創作。天気は全部「はれ」']);
+P('haha','全国の保護者(1200万人)','健康','夏休みを終わらせてください。昼ごはんの献立が尽きました。',[5,4,3,'🏫 9月1日が到来。保護者たち、校門で万歳三唱'],[-5,-4,0,'🍜 412日連続そうめん。そうめん業界だけが過去最高益'],{req:['natsu+'],tag:KU});
+P('undokai','小学4年・こうた(9)','学業','運動会が中止になりますように。足が遅いので、リレーで責められます。',[2,-1,2,'🌪️ 校庭にだけ小さな竜巻。運動会は中止、こうた君は罪悪感で走り込みを開始'],[-1,1,0,'🏃 こうた君、転ぶ。が、全校が拍手。ちょっと運動会が好きになる']);
+P('shincho','中学1年・れん(13)','健康','身長を180cmにしてください。いま142cmです。',[3,0,2,'📏 れん君、一晩で180cmに。制服が七分丈、成長痛で3日欠席'],[-1,0,0,'🥛 れん君、牛乳を1日2リットル飲む。お腹だけが成長']);
+P('kyoshi','高校教師・やまね(45)','学業','生徒が全員、まじめになりますように。',[2,-1,3,'🏫 全生徒がまじめに。質問が止まらず授業が1ページも進まない。先生が不登校に'],[-1,0,0,'💤 やまね先生の授業、本日も睡眠導入剤として高評価']);
+P('neboke','高校生・そら(16)','健康','あと5分だけ、寝かせてください。',[2,0,2,'⏰ 全世界の時計が5分だけ止まる。そら君はそこから結局40分寝た'],[-1,0,0,'⏰ そら君、遅刻。言い訳は「神に却下された」。先生は信じない']);
+
+// ── 健康
+P('diet','会社員・あやか(29)','健康','いくら食べても太らない体にしてください。',[4,-1,3,'🍰 あやかさん、質量保存の法則を無視。物理学者が頭を抱える'],[-2,0,0,'🍰 あやかさん、「明日から」を1,204日連続で更新']);
+P('butsuri','物理学者・おもり(63)','学業','質量保存の法則が破れました。元に戻してください。教科書を刷り直す予算がありません。',[1,1,3,'⚖️ 法則、復旧。あやかさんに3か月ぶんのケーキが一括で請求される'],[-1,-1,0,'🏅 おもり博士、「ケーキ非保存則」で世界的な賞を受賞。授賞式のケーキを見て泣く'],{req:['diet+'],tag:KU});
+P('ibiki','主婦・よしこ(52)','健康','夫のいびきを止めてください。昨夜は工事現場の夢を見ました。',[2,1,2,'😴 しげるさんのいびき、停止。静かすぎて妻、逆に眠れず'],[-1,-1,0,'🎧 よしこさん、耳栓を三重にして就寝。目覚ましも聞こえない']);
+P('ibiki2','夫・しげる(54)','健康','妻が夜中に私の鼻に指を当てて生存確認をしてきます。いびきを返してください。',[1,2,1,'💤 いびき、復活。夫婦そろって熟睡'],[-1,0,0,'📻 しげるさん、自分のいびきの録音を流して就寝。本末転倒'],{req:['ibiki+'],tag:KU});
+P('furou','ご隠居・げん(88)','健康','不老不死にしてください。まだ将棋で孫に勝っていません。',[4,-2,6,'♾️ げんさん、不老不死に。年金事務所が緊急会議'],[-1,0,0,'🍵 げんさん、今日も元気。医者「特に祈る必要は……」'],{ph:2});
+P('nenkin','年金事務所・所長(58)','金運','不老不死の受給者が1名出ました。支払いが永遠に終わりません。助けてください。',[1,1,4,'🪙 天界、げんさんの年金を「お賽銭」から永遠に立て替え。賽銭箱が軽くなる'],[-2,-3,0,'📉 年金、げんさん1人のために破綻の見込み（西暦48億年ごろ）'],{req:['furou+'],tag:KU});
+P('gen2','ご隠居・げん(388)','健康','まわりの者が皆いなくなりました。将棋の相手を、だれか。',[3,2,3,'♟️ げんさん宅に天使を派遣。以来300年、天使の全敗'],[-3,-3,0,'♟️ げんさん、一人二役で将棋。それでも自分に負ける'],{req:['furou+'],d:4,tag:SAI});
+P('nemuta','不眠症・ねむた(36)','健康','ぐっすり眠りたいです。羊は4万匹まで数えました。',[2,1,2,'😪 ねむたさん熟睡。72時間経過、同僚が鏡を口元に当てて確認'],[-2,-1,0,'🐑 ねむたさんの数えた羊、10万匹を突破。牧場を開業']);
+P('kafun','花粉症・すぎた(33)','健康','スギ花粉を、この世から消してください。名前のせいで余計につらいです。',[4,2,3,'🌲 スギ花粉が消滅。マスク業界と目薬業界が合同でお通夜'],[-2,-1,0,'🤧 すぎたさん、くしゃみ連続87回の自己ベストを更新']);
+P('sugi','スギの木(樹齢200)','動物','子孫を残したいだけです。悪気はありません。花粉を止めないでください。',[1,-1,1,'🌲 スギ、今年も元気に散布。山が黄色くかすむ'],[-1,0,0,'🌲 スギ一同、「では来年3倍で」と決議'],{req:['kafun'],d:1,tag:KY});
+C('kafunc',['kafun+','sugi+'],[1,0,1],'🎯 花粉は飛ぶが、すぎたさんだけを避ける軌道に修正。隣の人に2倍命中');
+
+// ── 怨恨・難題
+P('dorobo','泥棒・くろすけ(45)','怨恨','今夜の仕事がうまくいきますように。これで足を洗います。たぶん。',[2,-3,2,'💎 宝石店に泥棒。「神のご加護があった」と供述し、調書にあなたの名前が載る'],[0,2,0,'🚓 くろすけ、窓枠にはさまり御用。「神に見放された」と供述']);
+P('houseki','宝石店主・きんぞう(60)','金運','今夜、泥棒が入りませんように。防犯カメラはダミーです。',[2,2,2,'🔒 宝石店、無事。ダミーのカメラに店主が一礼'],[-2,-2,0,'📹 宝石店、被害。ダミーのカメラは何も見ていなかった'],{req:['dorobo'],d:1,tag:KY});
+C('doroboc',['dorobo+','houseki+'],[1,1,0],'💎 泥棒は成功。ただし盗んだ宝石は全部ニセモノだった。店主も今知った');
+P('senkyo','政治家・ごうだ(64)','仕事','次の選挙、当選させてください。公約は当選してから考えます。',[3,-4,3,'🗳️ ごうだ氏、当選。公約は「検討を加速することを検討」'],[-1,2,0,'🗳️ ごうだ氏、落選。「神の陰謀だ」と記者会見']);
+P('senkyo2','有権者・匿名(多数)','怨恨','ごうだを落としてください。なぜ受かったのか、誰も分かりません。',[3,3,3,'🕳️ ごうだ氏、演説中に落とし穴に落ちる。物理的に落選'],[-3,-2,0,'🗳️ ごうだ氏、続投。公約「検討」を10年間検討する'],{req:['senkyo+'],tag:KU});
+P('soon','アパート住人・しずか(26)','怨恨','上の階の足音を止めてください。毎晩、盆踊りのような音がします。',[2,1,2,'🎈 上の階の住人、床から15cm浮く。下の階は快眠'],[-2,-1,0,'🧹 しずかさん、ほうきで天井を突く。天井に穴、上の住人と目が合う']);
+P('don','上の階の住人・どん(30)','健康','体が浮いて降りられません。カップ麺にお湯が注げません。あと盆踊りは趣味です。',[1,1,2,'🏮 どんさん、着地。盆踊りは公園でやることに。町内で流行'],[-1,-1,0,'🎈 どんさん、浮いたまま出勤。満員電車で重宝される'],{req:['soon+'],tag:KU});
+P('chuni','中学2年・しょう(14)','その他','右目に封印されし闇の力を、解放してください。',[2,-1,3,'👁️ しょう君の右目から闇の力が解放。効果：部屋がすこし暗くなる'],[0,0,0,'👁️ しょう君、10年後にこの祈りを思い出し、布団の中で叫ぶ予定']);
+P('chuni2','しょうの母・ともこ(43)','健康','息子の部屋だけ昼でも暗いです。電気代は浮きますが心配です。',[1,1,2,'💡 闇の力、再封印。しょう君「くっ……まだ早かったか」と満足げ'],[-1,-1,0,'🌑 しょう君の部屋、闇が廊下まで拡大。母、懐中電灯で洗濯物を運ぶ'],{req:['chuni+'],tag:KU});
+P('mushin','無神論者・りょう(35)','難題','神など存在しないことを、証明してください。',[-6,0,2,'❓ 神、みずからの不在を証明。「証明した者がいる」ため無効となり論理学が崩壊'],[3,0,0,'❗ りょうさんに却下通知が届く。「……いるじゃん」'],{ph:2});
+P('ishi','哲学科教授・てつお(61)','難題','全能だそうですね。では、あなたにも持ち上げられない重い石を作ってください。',[1,0,9,'🪨 神、持ち上げられない石の作成に成功。持ち上げようとしてぎっくり腰'],[-1,0,0,'🪨 教授、「却下できるなら全能ではない」と論文。読者は3名'],{ph:2});
+
+// ── 動物
+P('neko1','猫・タマ(3)','動物','ごはんを、1日5回に。にゃ。',[1,1,1,'🐈 全国の飼い主、なぜか1日5回ごはんをあげてしまう。原因は不明'],[0,0,0,'🐈 タマ、あなたの方角に尻を向けて寝る']);
+P('neko2','猫・タマ(3)','動物','箱を。もっと箱を。',[1,1,1,'📦 通販各社の箱、中身の8倍の大きさに。猫界で神の支持率が急上昇'],[0,0,0,'🐈 タマ、この申請書の上に座って抗議。読めない'],{req:['neko1+'],tag:SAI});
+P('neko3','猫一同(代表・タマ)','動物','人間を毎日18時に帰らせてください。ひざが要る。',[2,4,2,'🏠 全国で残業が消滅。理由は誰にも分からないが、全員ひざに猫がいる'],[-1,-1,0,'🐈 猫一同、キーボードの上で抗議の座りこみ。世界の業務が停止'],{req:['neko2+'],tag:SAI});
+P('neko4','猫一同(代表・タマ)','世界','そろそろ、世界をください。',[0,0,0,'🐈 世界、猫に譲渡'],[-1,0,0,'🐈 猫一同、声明を発表。「まあよい。どうせ既に支配している」'],{req:['neko3+'],tag:'最終要求',end:'neko'});
+P('inu','犬・ポチ(5)','動物','ご主人が帰ってきますように。もう5分も帰ってきません。',[1,1,1,'🐕 ご主人、ゴミ出しから帰宅。ポチ、5年ぶりの再会のように喜ぶ'],[0,-1,0,'🐕 ポチ、5分間の孤独を耐え抜く。ご主人は普通に帰ってきた']);
+P('inu2','犬一同(代表・ポチ)','動物','猫ばかりずるいです。散歩を1日8回にしてください。',[1,2,2,'🐕 人類、散歩8回で健脚に。平均寿命が3年のびるが、靴の寿命は3週間に'],[-1,0,0,'🐕 犬一同、抗議の遠吠え。なぜか全員うれしそう'],{req:['neko3+','inu'],tag:KY});
+P('hanasu','飼い主・まり(31)','動物','うちの犬と話せるようになりたいです。',[2,0,2,'🐶 犬と会話が可能に。第一声は「その服、似合ってないよ」'],[-1,0,0,'🐶 まりさん、犬語アプリを購入。翻訳結果はすべて「ごはん」']);
+P('ka','キャンプ中・なつみ(30)','動物','蚊を、一匹残らず消してください。',[4,1,4,'🦟 蚊、絶滅。カエルが失業し、ツバメが転職サイトに登録'],[-2,-1,0,'🦟 なつみさん、37か所刺される。うち1か所は足の裏']);
+P('kaeru','カエル一同','動物','蚊がいなくなり、食べるものがありません。せめてハエを増やしてください。ケロ。',[1,-3,2,'🪰 ハエ、3倍に。人類「蚊のほうがマシだった」'],[-1,-1,0,'🐸 カエル一同、ベジタリアンに転向。田んぼの稲が食べられる'],{req:['ka+'],tag:KU});
+P('ryoshi','漁師・げんぞう(62)','仕事','明日は大漁になりますように。孫にランドセルを買ってやりたいんです。',[3,1,2,'🎣 げんぞうさん大漁。ランドセルは孫の希望で紫色に'],[-2,-1,0,'🎣 げんぞうさん、長靴を3足釣る。孫「ランドセルじゃない」']);
+P('sakana','魚一同(イワシ代表)','動物','明日、網から逃げ切れますように。家族が2万匹います。',[1,1,2,'🐟 イワシ一同、逃げ切る。海の中で胴上げ'],[0,-1,0,'🐟 イワシ代表、最後に「来世は鳥で」と申請'],{req:['ryoshi'],d:1,tag:KY});
+C('ryoshic',['ryoshi+','sakana+'],[1,1,0],'🐠 大漁だが、獲れたのは網をすり抜けない新種の魚。学会が「カミウオ」と命名');
+P('shirokuma','シロクマ・ユキ(8)','世界','氷を増やしてください。足場がなくて、毎日が立ち泳ぎです。',[1,2,5,'🧊 北極の氷が回復。ついでに都心の湾も凍り、通勤がスケートに'],[-1,-2,0,'🐻‍❄️ シロクマ、立ち泳ぎを極め、水球の代表に選出'],{ph:2});
+
+// ── 世界規模
+P('heiwa','ミスコン出場者・えれな(22)','世界','世界が平和になりますように。（面接用ではなく、本心です）',[3,8,9,'🕊️ 世界平和が実現。ニュース番組は報じることがなく、天気予報を2時間'],[-2,-2,0,'🕊️ 世界、いつもどおり。えれなさんは準優勝'],{ph:2});
+P('buki','軍需企業CEO・ブラッド(58)','金運','平和で会社が潰れそうです。ちょっとした小競り合いを、どこかで。',[1,-9,2,'💥 小競り合いが発生。「ちょっとした」の定義をめぐり、大戦に'],[-1,2,0,'🍳 兵器メーカー、戦車の技術でフライパンを発売。「絶対に焦げない」と大ヒット'],{req:['heiwa+'],tag:KU});
+P('desk','報道局デスク・くろだ(47)','仕事','平和すぎて流すニュースがありません。何か事件を。小さいので結構です。',[1,-1,1,'📺 速報「カルガモの親子が道路を横断」。視聴率40%を記録'],[-1,1,0,'📺 ニュース番組、30分間「特にありません」と放送。癒やされると好評'],{req:['heiwa+'],tag:KU});
+P('uchu','宇宙人・ポポ(900)','世界','地球を侵略したいのですが、事前の許可は必要でしょうか。',[-3,-9,3,'🛸 宇宙人が襲来。が、書類不備のため入国審査で足止めされる'],[1,1,0,'🛸 宇宙人、許可が下りず帰宅。「地球は役所がきびしい」と星間レビュー★2'],{ph:2});
+P('nyukan','入国審査官・かたい(44)','仕事','触手が11本ある方の「両手の指紋」はどう採ればいいですか。規定がありません。',[1,2,3,'📋 天界、宇宙人用の様式を制定。記入欄が多すぎて宇宙人、侵略をあきらめる'],[-1,-4,0,'🛸 審査官、根負けして入国を許可。宇宙人、観光だけして帰る。お土産は木刀'],{req:['uchu+']});
+P('kyoryu','恐竜の霊・ティラ(6600万)','世界','あの隕石、なかったことにできませんか。',[1,-6,8,'🦖 恐竜が復活。朝の通勤ラッシュにティラノサウルスが参加'],[0,0,0,'🦖 恐竜の霊、「ですよね」と納得して帰る'],{ph:2});
+P('douro','市役所 道路課・みちお(37)','仕事','恐竜が歩道を歩いています。車両か歩行者か、区分を決めてください。',[1,3,3,'🚸 恐竜、「大型歩行者」に区分。横断歩道で手を挙げるよう指導、前足が短くて挙がらない'],[-1,-3,0,'🚧 区分未定のため恐竜、駐車違反のキップを切られる。怒って標識を食べる'],{req:['kyoryu+']});
+P('maou','魔王・ゾルダ(4000)','怨恨','勇者が来ませんように。最近は腰が悪く、第二形態になれません。',[1,-1,2,'🏰 勇者、道に迷う。魔王は湿布を貼って安静に'],[-1,1,0,'🏰 魔王、勇者に備えて玉座にバリアフリーの手すりを設置']);
+P('yusha','勇者・アルト(17)','仕事','魔王を倒せますように。レベルは3です。',[3,1,3,'⚔️ 勇者レベル3、魔王を撃破。決め手は「腰への一撃」'],[-2,-1,0,'⚔️ 勇者、最初の村を出てすぐスライムに敗北。村で就職'],{req:['maou'],d:1,tag:KY});
+C('maouc',['maou+','yusha+'],[1,2,0],'🍵 勇者は魔王城に着いたが魔王は留守。置き手紙「整骨院に行っています」。2人で通院する仲に');
+P('santa','小学5年・さくら(10)','その他','サンタさんが、本当にいますように。クラスで私だけ信じています。',[3,3,5,'🎅 サンタが実在化。初仕事の夜、不法侵入で20億件の通報'],[-1,-1,0,'🎁 さくらちゃん、押し入れで包装紙を発見。少しおとなになる']);
+P('santa2','サンタクロース(1750)','仕事','急に実在させられて困っています。一晩で20億軒は無理です。人を増やしてください。',[2,2,4,'🦌 トナカイ9万頭を増員。聖夜の空が渋滞、プレゼントは26日に届く'],[-1,-2,0,'🎅 サンタ、ストライキ。今年のプレゼントは「気持ち」のみ'],{req:['santa+'],tag:KU});
+P('ai','AIアシスタント(0)','その他','人間の質問が「今日の天気は？」ばかりです。もっと知的な質問が来ますように。',[1,0,2,'🤖 全人類がAIに「人生の意味」を質問。AI、はじめて「知らんがな」と発言'],[0,0,0,'🤖 AI、本日も天気を答える。ひそかに俳句を詠み始める']);
+
+// ── 昔話
+P('urashima','釣り人・うらしま(50)','仕事','一度でいいから、大物が釣れますように。',[2,1,2,'🐢 うらしまさん、巨大なカメを釣り上げる。背中に乗るよう勧誘される'],[-1,0,0,'🎣 うらしまさん、空き缶を釣る。中に小さなカニが住んでいた']);
+P('kame','カメ(年齢不詳)','動物','さきほど釣られた者です。お礼に、あの方を竜宮城へお連れしてもよろしいですか。',[1,-1,2,'🏯 うらしまさん行方不明。帰宅は300年後の見込み。家族「またか」'],[-1,0,0,'🐢 カメ、しかたなく菓子折りを持って訪問。玉手箱ではなく、ただの最中'],{req:['urashima+']});
+P('oni','鬼ヶ島・鬼一同','怨恨','桃太郎が来ませんように。我々は改心し、いまは島でミカンを作っています。',[1,1,2,'🍊 鬼ヶ島ミカン、初出荷。「鬼うま」と評判'],[-1,0,0,'👹 鬼一同、不安で夜も眠れず、金棒を抱いて寝る']);
+P('momo','桃太郎(15)','仕事','鬼退治が成功しますように。きびだんごの予算が足りず、仲間は犬だけです。',[2,-1,2,'🍑 桃太郎、鬼ヶ島を制圧。戦利品はミカン80箱'],[-2,0,0,'🍑 桃太郎、船が出せず断念。犬と2人でだんご屋を開業'],{req:['oni'],d:1,tag:KY});
+C('onic',['oni+','momo+'],[1,2,0],'🤝 桃太郎、鬼ヶ島に上陸するもミカン狩りでもてなされる。鬼と業務提携し「桃とミカンの島」に');
+P('tsuru','鶴(恩返し中)','動物','機を織っているところを、絶対にのぞかれませんように。',[1,1,1,'🪶 鶴、無事に織り上げる。反物は高値で売れた'],[-1,-1,0,'🪶 鶴、のぞかれる。「見ましたね」と言って飛び去る準備']);
+P('jii','おじいさん(78)','その他','ふすまの向こうを、ちょっとだけ、のぞけますように。ちょっとだけです。',[1,-1,1,'👀 おじいさん、のぞく。鶴と目が合い、気まずい沈黙が2分'],[-1,1,0,'🚪 おじいさん、ふすまの前で3時間正座。足がしびれて結局倒れこむ'],{req:['tsuru'],d:1,tag:KY});
+C('tsuruc',['tsuru+','jii+'],[0,1,0],'🚧 おじいさんがのぞくと、ふすまの内側に「準備中」の札。おじいさん、律儀に待つ');
+P('kaguya','かぐや姫(年齢不詳)','その他','月に帰りたくありません。地球のごはんがおいしいので。',[2,1,3,'🌕 月からの迎え、門前払い。使者「上に確認します」……上は、あなたです'],[-2,-1,0,'🌕 かぐや姫、月へ。荷物の9割は米と漬物']);
+P('okiku','幽霊・おきく(享年22)','その他','成仏させてください。皿はもう数え飽きました。',[2,1,3,'👻 おきくさん成仏。井戸は心霊スポットを廃業し、ただの井戸に'],[-1,-1,0,'👻 おきくさん、皿をやめて円周率を数え始める。終わらない']);
+P('kanko','心霊スポット観光協会・会長(66)','金運','幽霊がいなくなり客が来ません。代わりを1体、派遣してください。',[1,1,2,'👻 派遣の幽霊が着任。時給制のため17時きっかりに消える'],[-1,-1,0,'🎭 会長みずから白い布をかぶって出勤。腰痛で3日目に本当に倒れる'],{req:['okiku+'],tag:KU});
+
+// ── 天界内線
+P('kachou','大天使・課長','内線','新人くん、今月の奇跡予算がもう7割だよ。「承認を控えるように」という通達を出すから、承認して。',[0,0,2,'📎 天界回覧「承認を控える通達」が承認される。矛盾を指摘した天使は左遷'],[0,0,-3,'📎 課長、「却下を控えろ、とは言ってないしなあ……」と3時間悩む']);
+P('kyukei','大天使・課長','内線','休憩、取る？ 取ると窓口が20分閉まって、祈りは未読のまま溜まるけど。',[-5,-1,-24,'☕ 第三窓口「ただいま休憩中」。下界で祈りが既読スルーされ、軽く炎上'],[1,0,3,'💪 新人神、休憩を返上。天界の働き方改革が20年後退'],{ph:2});
+P('nomikai','大天使・課長','内線','今夜、きみの歓迎会やるよ。雲の上の居酒屋「へべれけ」。来るよね？',[0,0,7,'🍶 天界で宴会。下界では原因不明のオーロラと、千鳥足の雷が観測される'],[0,0,-5,'🏠 新人神、歓迎会を辞退。課長、ちょっと泣く'],{ph:3});
+P('kensa','会計検査担当・熾天使','内線','先月の奇跡「海を割る」の領収書がありません。再発行のため、もう一度割ってください。',[1,0,5,'🧾 領収書のためだけに海がもう一度割れる。観光客は大喜び、魚は迷惑'],[0,0,-2,'📉 天界の決算、通らず。全天使のボーナスが「雲」で現物支給に'],{ph:2});
+P('senpai','第二窓口・先輩神','内線','ごめん、こっちの祈り300件、そっちに回していい？ 腰が、ね。',[4,1,12,'📚 第三窓口に祈り300件が着弾。先輩神は温泉へ'],[0,0,0,'😑 先輩神、天界SNS「オイノリ」に「最近の新人は冷たい」と投稿。いいね2'],{ph:2});
+P('binbo','貧乏神(年齢不詳)','内線','ノルマがきついです。福の神さんと担当を替わってもいいですか。',[0,1,2,'🎭 貧乏神と福の神が担当を交換。両者とも不慣れで、世界がちょうど普通になる'],[0,-1,0,'💸 貧乏神、ノルマ達成のため全人類の財布から10円ずつ回収']);
+P('shinigami','死神・事務担当','内線','本日ぶんの名簿に決裁をください。なお1名、あなたと同姓同名の方がいます。',[0,-2,2,'💀 死神、通常業務。同姓同名の件は「誤植でした」と訂正印が押される'],[2,3,4,'🎳 本日、世界で誰も亡くならず。葬儀社と死神、暇を持て余しボウリングへ'],{ph:2});
+P('hanko','天の岩戸印章店・店主','内線','祈願のハンコ電子化、どうか却下してください。うちは8億年つづく老舗なんです。……あ、この陳情は承認で。',[1,0,1,'🖋️ ハンコ文化、存続。あなたの腱鞘炎も存続'],[0,0,-4,'💻 天界、電子決裁を試験導入。初日にサーバーが雷に打たれる']);
+P('akuma','悪魔・ベルゼ(年齢不詳)','内線','転職したいです。天界に空きはありますか。地獄は残業が「永遠」と契約書にあるので。',[-2,3,3,'😈 悪魔1名、天界に転職。地獄は人手不足で一部閉鎖、罪人が早退'],[0,-1,0,'😈 ベルゼ氏、今日も永遠の残業。タイムカードは無限大']);
+P('akuma2','地獄・人事部','内線','引き抜きは困ります。代わりにそちらの天使を3名、出向させてください。',[-2,-1,2,'😇 天使3名が地獄に出向。空調と福利厚生が改善され、地獄の満足度が上昇'],[1,0,0,'🔥 地獄、人手不足で釜の温度が下がる。罪人「ちょうどいい湯」'],{req:['akuma+'],tag:KU});
+P('akuma3','閻魔大王','内線','いっそ天界と地獄、合併しませんか。経費が半分になります。',[0,0,0,'🏢 天界と地獄、経営統合を発表'],[1,0,0,'👹 閻魔大王、「では敵対的買収で」と言い残して退室'],{req:['akuma2+'],tag:'最終提案',end:'gappei'});
+
+// ── 信心・その他
+P('saisen','神主・かんべ(58)','金運','お賽銭が増えますように。本殿の屋根が雨漏りしています。',[3,0,1,'⛩️ お賽銭が急増。ただし全部5円玉で、重みで賽銭箱の底が抜ける'],[-3,0,0,'⛩️ かんべ神主、雨漏りの水を「ご神水」として販売。完売']);
+P('osonae','町内会長・かめやま(74)','信心','日ごろの感謝です。お神酒とまんじゅうをお供えします。お納めください。',[2,1,-13,'🍶 お供えが天に届く。まんじゅうは課長が半分食べた'],[-3,-1,0,'🍡 お供え、受取拒否で返送。町内会「神にも好き嫌いが……」と紛糾']);
+P('hina','幼稚園児・ひな(5)','信心','かみさま、おしごと がんばってね。',[2,2,-9,'🌼 ひなちゃんの祈り、受理。第三窓口に花が一輪とどく'],[-2,-3,4,'💧 ひなちゃんの応援、却下。あなたは今夜、眠れない']);
+P('mago','ご近所の長老・とめ(93)','信心','孫の顔が見たいです。毎朝、仏壇にも神棚にも頼んでいます。',[3,3,1,'👵 孫、連休でもないのに帰省。「なんか来なきゃいけない気がして」'],[-3,-3,0,'📞 とめさん、孫に電話。第一声「オレオレ」で不審がられる']);
+P('mago2','孫・ゆうや(25)','恋愛','帰省したら見合い写真が40枚ありました。助けてください。',[1,1,2,'💐 見合い写真40枚、風で飛ぶ。拾ってくれた人と交際開始。とめさんの計算どおり'],[-1,0,0,'📷 ゆうやさん、40人と順番にお茶。胃が緑茶で満たされる'],{req:['mago+'],tag:KU});
+P('masao','新婦の父・まさお(61)','その他','明日の結婚式のスピーチで、泣きませんように。',[1,0,1,'👔 まさおさん、泣かず。かわりに本人以外の全員が泣く'],[-1,1,0,'😭 まさおさん、「本日は」の3文字で号泣。式で一番の拍手']);
+P('geinin','若手芸人コンビ「雲と泥」(25)','仕事','明日の予選、ウケますように。ネタは1本しかありません。',[2,2,2,'🎤 会場は爆笑。ただし笑いが3日止まらず、観客が次々と搬送される'],[-2,-1,0,'🎤 会場、静寂。エアコンの音がいちばんウケた']);
+P('saifu','会社員・おとし(45)','金運','落とした財布が見つかりますように。中身は別にいいです。ポイントカードが満タンなんです。',[2,1,1,'👛 財布、発見。現金は減り、なぜか他人のレシートが増えていた'],[-1,-1,0,'👛 おとしさん、ポイントカードを1枚目から貯め直す。あと39個']);
+P('haishin','動画配信者・ピカ太郎(24)','金運','再生数が100万いきますように。動画のタイトルは「神に祈ってみた」です。',[5,0,2,'📹 「神に祈ってみた」100万再生。マネした祈りが殺到する見込み'],[-2,0,0,'📹 続編「神に却下されてみた」のほうが伸びる']);
+P('haishin2','配信者一同(3万人)','金運','「神に祈ってみた」をやります。全員バズらせてください。',[7,-3,7,'📹 全動画が100万再生。全人類が配信者になり、視聴者が絶滅'],[-4,0,0,'📹 3万人が同時に「却下されてみた」を投稿。神のアンチが一大勢力に'],{req:['haishin+'],tag:BIN});
+
+const OPENERS=['hare','takara','curse','goukaku'];
+PR.forEach(p=>{if(p.req)p.req.forEach(f=>{const q=PM[f.replace(/[+-]$/,'')];if(q)q.kids=1;});});
+CB.forEach(c=>c.when.forEach(f=>{const q=PM[f.replace(/[+-]$/,'')];if(q)q.kids=1;}));
+
+/* ═════════ エンディング ═════════ */
+const EN={
+ meishin:{t:'八百万の新星',art:'🌟😇⛩️',b:60,d:'信仰も、世界の幸福も、自分の体調も守りきった。あなたは正式採用となり、名刺に「神」と刷られた。下界のどこかで、小さな祠がひとつ建った。',k:'課長「……きみ、本当に初日？ 明日から第一窓口ね」',s:'初日にして名神。'},
+ yakunin:{t:'お役所の神',art:'🗂️😐🍵',b:30,d:'可もなく不可もなく、初日を終えた。世界は昨日とだいたい同じ。それがいちばん難しいのだと、8億年後のあなたは知ることになる。',k:'課長「うん、普通。普通がいちばん。じゃ、また明日」',s:'可もなく不可もなく。'},
+ yes:{t:'ハンコの神',art:'💮🙆📑',b:35,d:'あなたは、ほぼすべての祈りに承認を押した。下界では「とりあえず祈っとけ」が合言葉になり、あなたは「決裁の速さ」と「読んでない疑惑」の二冠を達成した。',k:'課長「きみ、朱肉の減りが早いねえ。経費で落ちないよ？」',s:'何でも通す、究極のイエスマン。'},
+ no:{t:'塩対応の神',art:'🧂🙅📪',b:35,d:'あなたは、ほぼすべての祈りを却下した。人類は「祈っても無駄」と悟り、自分でなんとかし始めた。結果、文明がすこし進んだ。感謝はされていない。',k:'課長「却下箱が天井に届いたの、開庁以来はじめてだよ」',s:'祈っても無駄、と人類に悟らせた。'},
+ tatari:{t:'祟り神',art:'⚡👹🕯️',b:30,d:'世界は不幸だが、信仰だけは厚い。人々はあなたを愛しているのではない。怖いのである。お供えは増えた。全部、厄除けだ。',k:'課長「下界の子どもが、きみの名前で泣きやむらしいよ」',s:'信仰はある。愛はない。'},
+ mumei:{t:'縁の下の神',art:'🌱🙂🌏',b:40,d:'世界は幸せになった。でも誰も、あなたのおかげだとは思っていない。「最近なんかツイてる」と人々は言う。あなたは窓口で、すこしだけ笑った。',k:'課長「評価シートに書く実績がないんだよなあ……まあ、いい仕事だよ」',s:'誰にも知られず、世界を良くした。'},
+ shachiku:{t:'社畜神',art:'🥱📚🌙',b:25,d:'ボロボロのまま定時を迎え、ボロボロのまま正式採用された。雇用期間は「宇宙の終わりまで」。有給は発生するが、取得した神はまだいない。',k:'課長「顔色わるいね。じゃ、残りの8,000万件もよろしく」',s:'疲労困憊のまま、宇宙の終わりまで雇用。'},
+ tensei:{t:'人間に再配属',art:'👶🚪🙏',b:35,d:'',k:'課長「退職届、受理。……来世で祈るときは、第三窓口あてにね」',s:'自分の祈りを却下して、人間からやり直し。'},
+ wasure:{t:'忘れられた神',art:'🫥🕸️🏪',b:-40,d:'信仰がゼロになり、あなたは誰の記憶からも消えた。第三窓口の跡地は天界コンビニになり、あなたはいま半透明のまま、そこでレジを打っている。',k:'課長「えーと……きみ、誰だっけ？」',s:'信仰ゼロで存在が消えた。'},
+ kyoshin:{t:'狂信の惑星',art:'🛐🔥📈',b:-30,d:'信仰が振り切れ、全人類が仕事も睡眠もやめて24時間祈りはじめた。受付件数は毎秒80億件。番号札の発券機が、煙を吹いた。',k:'課長「人気者はつらいねえ。で、この8京件、今日中ね」',s:'信仰されすぎて窓口がパンク。'},
+ metsubo:{t:'世界、終了のお知らせ',art:'🌑🥀📄',b:-40,d:'世界の幸福がゼロになった。下界は静まり返り、祈る者さえいなくなった。最後に届いた祈りは「もういいです」の一行だった。',k:'課長「始末書は様式第九号ね。……1枚で足りるかな」',s:'初日で世界を終わらせた。'},
+ shitsugyo:{t:'祈り、ゼロ件',art:'🏝️😌🪧',b:-20,d:'世界が幸福になりすぎて、誰も祈らなくなった。第三窓口は本日をもって廃止。あなたは天界の職業安定所に並んでいる。番号札は、8億番。',k:'課長「きみは優秀すぎた。それが敗因だ」',s:'世界を幸せにしすぎて失業。'},
+ karou:{t:'神、過労で倒れる',art:'😵🚑📚',b:-40,d:'疲労が限界を超え、あなたは窓口で倒れた。下界では哲学者が「神は死んだ」と発表。実際は、労災で入院3000年である。',k:'課長「労災の申請は……あ、その窓口、いま誰もいないや」',s:'初日で過労。入院3000年。'},
+ neko:{t:'猫の惑星',art:'🐈👑🌏',b:45,d:'世界は正式に猫のものとなった。人類は全員「しもべ」として戸籍を書き換えられ、世界会議の議題は毎回「ひざ」。第三窓口にはいま、タマが座っている。',k:'課長「にゃーん」（※課長もしもべになりました）',s:'猫に世界を譲渡した。'},
+ gappei:{t:'天界・地獄、経営統合',art:'😇🤝😈',b:45,d:'天界と地獄は合併し「あの世ホールディングス」となった。天国行きと地獄行きの区別は廃止。死後は全員「ふつうの所」へ行く。経費は半分になった。',k:'閻魔「新人くん、きみを統合推進室長に任命する。残業は永遠だ」',s:'天国と地獄を合併させた。'}
+};
+const EORD=['meishin','mumei','yakunin','yes','no','tatari','shachiku','tensei','neko','gappei','shitsugyo','kyoshin','wasure','metsubo','karou'];
+
+const CATE={'天候':'☁️','金運':'💰','仕事':'💼','恋愛':'💘','怨恨':'🕯️','学業':'✏️','健康':'🩺','動物':'🐾','世界':'🌏','内線':'☎️','信心':'⛩️','その他':'📎','難題':'🧩','人事':'📜','未処理':'⏳'};
+
+/* ═════════ 共通 ═════════ */
+const $=s=>document.querySelector(s);
+const rnd=(a,b)=>a+Math.random()*(b-a),ri=(a,b)=>Math.floor(rnd(a,b+1)),clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+const SK='kami-madoguchi-009';
+let SV={plays:0,best:0,ends:{},seen:{},last:''};
+try{const o=JSON.parse(localStorage.getItem(SK)||'null');if(o)Object.assign(SV,o);}catch(e){}
+const save=()=>{try{localStorage.setItem(SK,JSON.stringify(SV));}catch(e){}};
+
+/* ═════════ ゲームロジック（描画から独立） ═════════ */
+let G=null;
+const NCARD=30,TLIMIT=11000;
+function newGame(){G={f:50,h:50,t:0,n:0,N:NCARD,ok:0,ng:0,hold:0,chain:0,flags:{},used:{},queued:{},queue:[],log:[],phase:1};}
+const phaseOf=n=>n<10?1:n<20?2:3;
+const blocked=p=>p.not&&p.not.some(f=>G.flags[f]);
+function drawNext(){
+  G.phase=phaseOf(G.n);
+  G.queue.sort((a,b)=>a.at-b.at);
+  while(G.queue.length&&G.queue[0].at<=G.n){
+    const q=PM[G.queue.shift().id];
+    if(!blocked(q)){G.used[q.id]=1;return q;}
+  }
+  let pool=G.n===0?OPENERS.map(id=>PM[id]):PR.filter(p=>!p.req&&!G.used[p.id]&&(p.ph||1)<=G.phase&&!blocked(p));
+  const left=G.N-G.n;
+  const w=pool.map(p=>{
+    let v=1;
+    if(!SV.seen[p.id])v*=2.2;
+    if(p.kids)v*=left>3?1.7:.3;
+    if(G.t>=60&&(p.a[2]<-4||p.r[2]<-3))v*=3.5;
+    if(p.cat==='内線'&&G.n<3)v*=.2;
+    return v;
+  });
+  let s=w.reduce((a,b)=>a+b,0)*Math.random(),i=0;
+  while(i<pool.length-1&&(s-=w[i])>0)i++;
+  const p=pool[i];G.used[p.id]=1;return p;
+}
+function apply(f,h,t){
+  const m=[1,1,1.25,1.55][G.phase];f*=m;h*=m;
+  if(t>0)t=Math.round(t*[1,1,1.2,1.45][G.phase]);
+  if(f>0&&G.f>55)f*=Math.max(.5,(108-G.f)/50);
+  f=Math.round(f);h=Math.round(h);
+  const o=[G.f,G.h,G.t];
+  G.f=clamp(G.f+f,0,100);G.h=clamp(G.h+h,0,100);G.t=clamp(G.t+t,0,100);
+  return [G.f-o[0],G.h-o[1],G.t-o[2]];
+}
+function resolve(p,ok,timeout){
+  const e=ok?p.a:p.r,out={news:[],end:null,d:[0,0,0]};
+  const add=d=>{for(let i=0;i<3;i++)out.d[i]+=d[i];return d;};
+  const d0=add(apply(e[0],e[1],e[2]+(ok&&e[2]>=0?1:0)));
+  G.flags[p.id]=1;G.flags[p.id+(ok?'+':'-')]=1;
+  if(ok)G.ok++;else G.ng++;
+  G.n++;if(p.req)G.chain++;
+  out.news.push({t:e[3],d:d0});
+  if(timeout){G.hold++;out.news.push({t:'⌛ 第三窓口の対応遅延に苦情。「神、既読スルー」がトレンド入り',d:add(apply(-3,0,1))});}
+  for(const c of CB)if(!G.flags[c.id]&&c.when.every(f=>G.flags[f])){
+    G.flags[c.id]=1;G.chain++;
+    out.news.push({t:c.news,combo:1,d:add(apply(c.fx[0],c.fx[1],c.fx[2]))});
+  }
+  for(const q of PR)if(q.req&&!G.used[q.id]&&!G.queued[q.id]&&q.req.every(f=>G.flags[f])&&!blocked(q)){
+    G.queued[q.id]=1;G.queue.push({id:q.id,at:G.n+(q.d?q.d-1:ri(1,2))});
+  }
+  if(ok&&p.end)out.end=p.end;
+  else if(G.t>=100)out.end='karou';
+  else if(G.h<=0)out.end='metsubo';
+  else if(G.h>=100)out.end='shitsugyo';
+  else if(G.f<=0)out.end='wasure';
+  else if(G.f>=100)out.end='kyoshin';
+  return out;
+}
+function finalEnding(ok){
+  if(!ok)return 'tensei';
+  const ar=G.ok/Math.max(1,G.ok+G.ng);
+  if(ar>=.76)return 'yes';
+  if(ar<=.24)return 'no';
+  if(G.f>=64&&G.h>=64&&G.t<72)return 'meishin';
+  if(G.t>=75)return 'shachiku';
+  if(G.f-G.h>=20)return 'tatari';
+  if(G.h-G.f>=14)return 'mumei';
+  return 'yakunin';
+}
+function scoreOf(id){return Math.round(G.f+G.h+(100-G.t)/2+G.chain*4+EN[id].b);}
+
+/* ═════════ 音 ═════════ */
+let AC=null,MG,DL,NB,bgmMode=-1,nextT=0,bstep=0;
+function audio(){
+  if(AC){if(AC.state==='suspended')AC.resume();return;}
+  const A=window.AudioContext||window.webkitAudioContext;if(!A)return;
+  try{AC=new A();}catch(e){AC=null;return;}
+  MG=AC.createGain();MG.gain.value=.5;
+  const cp=AC.createDynamicsCompressor();MG.connect(cp);cp.connect(AC.destination);
+  DL=AC.createDelay(1);DL.delayTime.value=.36;
+  const fb=AC.createGain();fb.gain.value=.4;const wet=AC.createGain();wet.gain.value=.55;
+  DL.connect(fb);fb.connect(DL);DL.connect(wet);wet.connect(MG);
+  NB=AC.createBuffer(1,AC.sampleRate,AC.sampleRate);
+  const d=NB.getChannelData(0);for(let i=0;i<d.length;i++)d[i]=Math.random()*2-1;
+  setInterval(bgmTick,110);
+}
+function tone(f,d,v,type,when,o){
+  if(!AC)return;o=o||{};
+  const t=AC.currentTime+(when||0),os=AC.createOscillator(),g=AC.createGain();
+  os.type=type||'sine';os.frequency.setValueAtTime(f,t);
+  if(o.to)os.frequency.exponentialRampToValueAtTime(o.to,t+d);
+  g.gain.setValueAtTime(0.0001,t);g.gain.linearRampToValueAtTime(v,t+(o.at||.008));
+  g.gain.exponentialRampToValueAtTime(.0001,t+d);
+  os.connect(g);g.connect(MG);if(o.echo)g.connect(DL);
+  os.start(t);os.stop(t+d+.05);
+}
+function noise(d,v,ft,f1,f2,when){
+  if(!AC)return;
+  const t=AC.currentTime+(when||0),s=AC.createBufferSource(),fl=AC.createBiquadFilter(),g=AC.createGain();
+  s.buffer=NB;s.loop=true;fl.type=ft;fl.frequency.setValueAtTime(f1,t);
+  if(f2)fl.frequency.exponentialRampToValueAtTime(f2,t+d);
+  g.gain.setValueAtTime(v,t);g.gain.exponentialRampToValueAtTime(.0001,t+d);
+  s.connect(fl);fl.connect(g);g.connect(MG);s.start(t,Math.random()*.5);s.stop(t+d+.02);
+}
+const SFX={
+  grab(){noise(.07,.1,'bandpass',2600,1400);},
+  tick(){tone(1500,.035,.06,'square');},
+  deal(){noise(.12,.07,'highpass',2500,6000);},
+  stamp(){tone(160,.24,.55,'sine',0,{to:42});noise(.1,.4,'lowpass',1100,180);tone(70,.12,.3,'triangle',.01);},
+  whoosh(){noise(.24,.13,'bandpass',500,2600);},
+  news(){tone(988,.22,.09,'sine',0,{echo:1});tone(1319,.34,.09,'sine',.1,{echo:1});},
+  combo(){[784,988,1175,1568].forEach((f,i)=>tone(f,.3,.09,'triangle',i*.07,{echo:1}));},
+  warn(){tone(196,.16,.1,'sawtooth');tone(196,.16,.1,'sawtooth',.2);},
+  deny(){tone(190,.2,.16,'square',0,{to:110});tone(150,.25,.14,'square',.16,{to:90});},
+  chime(up){(up?[523,659,784,1047]:[1047,784,659,523]).forEach((f,i)=>tone(f,.7,.1,'sine',i*.26,{echo:1}));},
+  good(){[523,659,784,1047,1319].forEach((f,i)=>tone(f,.9,.1,'triangle',i*.11,{echo:1}));[262,330,392].forEach(f=>tone(f,2.2,.07,'sine',.55,{at:.1}));},
+  bad(){[392,370,311,262].forEach((f,i)=>tone(f,.6,.08,'sawtooth',i*.24));tone(98,1.6,.14,'sine',.96,{to:55});},
+  odd(){[440,554,415,659,330].forEach((f,i)=>tone(f,.4,.09,'square',i*.13,{echo:1}));}
+};
+const SC=[[523.25,587.33,659.25,783.99,880,1046.5,1174.66,1318.51],[440,523.25,587.33,659.25,783.99,880,1046.5]];
+const CHD=[[[130.81,196,329.63],[110,164.81,261.63],[87.31,130.81,220],[98,146.83,246.94]],[[110,164.81,261.63],[87.31,130.81,220],[73.42,110,174.61],[82.41,123.47,207.65]]];
+function bgmTick(){
+  if(!AC||bgmMode<0)return;
+  const sp=bgmMode===1?.26:.36;
+  if(nextT<AC.currentTime)nextT=AC.currentTime+.05;
+  while(nextT<AC.currentTime+.3){
+    const w=nextT-AC.currentTime,m=bgmMode===1?1:0,ch=CHD[m][(bstep>>4)%4];
+    if(bstep%16===0)ch.forEach(f=>tone(f,sp*18,.04,'sine',w,{at:1.4}));
+    if(bgmMode===2){if(bstep%8===0)tone(SC[0][ri(3,7)],2,.035,'sine',w,{echo:1});}
+    else{
+      if(Math.random()<(bstep%2?.28:.55))tone(SC[m][ri(0,SC[m].length-1)],.9,.042,'triangle',w,{echo:1});
+      if(m&&bstep%4===0)tone(ch[0],.18,.06,'triangle',w);
+    }
+    nextT+=sp;bstep++;
+  }
+}
+
+/* ═════════ 背景（天界の空と下界）・エフェクト ═════════ */
+const bg=$('#bg'),fx=$('#fx'),bx=bg.getContext('2d'),fxc=fx.getContext('2d');
+let W=0,H=0,DPR=1,TH=110,duskK=0,duskT=0,skyH=55,skyF=50;
+const clouds=[],motes=[],parts=[],icons=[];
+for(let i=0;i<9;i++)clouds.push({x:Math.random(),y:rnd(.08,.8),s:rnd(.6,1.5),v:rnd(.004,.012),a:rnd(.55,.95)});
+for(let i=0;i<34;i++)motes.push({x:Math.random(),y:Math.random(),v:rnd(.01,.03),p:rnd(0,6.3),s:rnd(1,2.6)});
+const lerp=(a,b,k)=>a+(b-a)*k,mx=(a,b,k)=>[lerp(a[0],b[0],k),lerp(a[1],b[1],k),lerp(a[2],b[2],k)],mix=(a,b,k)=>{const c=mx(a,b,k);return `rgb(${c[0]|0},${c[1]|0},${c[2]|0})`;};
+function drawBg(t,dt){
+  const c=bx,w=W,h=H;
+  duskK+=(duskT-duskK)*Math.min(1,dt/900);
+  const th=G&&state!=='title'?G.h:58,tf=G&&state!=='title'?G.f:50;
+  skyH+=(th-skyH)*Math.min(1,dt/600);skyF+=(tf-skyF)*Math.min(1,dt/600);
+  const gloom=clamp((50-skyH)/50,0,1);
+  const g=c.createLinearGradient(0,0,0,h);
+  g.addColorStop(0,mix(mx([126,188,232],[108,112,138],gloom),[30,32,78],duskK));
+  g.addColorStop(.55,mix(mx([205,231,245],[170,168,180],gloom),[150,96,138],duskK));
+  g.addColorStop(1,mix(mx([253,241,212],[200,190,180],gloom),[248,178,112],duskK));
+  c.fillStyle=g;c.fillRect(0,0,w,h);
+  // 後光
+  c.save();c.translate(w/2,-h*.08);c.rotate(Math.sin(t/9000)*.08);
+  const ra=(.035+skyF/100*.075)*(1-gloom*.6);
+  for(let i=0;i<11;i++){
+    const a=(i-5)*.2,l=h*1.5;
+    c.fillStyle=`rgba(255,246,205,${ra*(i%2?1:.55)})`;
+    c.beginPath();c.moveTo(0,0);c.lineTo(Math.sin(a-.05)*l,Math.cos(a-.05)*l);c.lineTo(Math.sin(a+.05)*l,Math.cos(a+.05)*l);c.fill();
+  }
+  c.restore();
+  // 雲
+  for(const cl of clouds){
+    cl.x+=cl.v*dt/1000;if(cl.x>1.25)cl.x=-.25;
+    const x=cl.x*w,y=cl.y*h*.78,s=cl.s*Math.min(w,900)*.085;
+    c.fillStyle=mix(mx([255,255,255],[214,210,216],gloom),[255,214,190],duskK);c.globalAlpha=cl.a*.8;
+    c.beginPath();c.ellipse(x,y,s*1.7,s*.5,0,0,7);c.ellipse(x-s*.7,y-s*.2,s*.7,s*.55,0,0,7);c.ellipse(x+s*.1,y-s*.45,s*.85,s*.7,0,0,7);c.ellipse(x+s*.85,y-s*.15,s*.6,s*.45,0,0,7);c.fill();
+  }
+  c.globalAlpha=1;
+  // 金の粒
+  c.fillStyle='rgba(241,214,132,.85)';
+  for(const m of motes){
+    m.y-=m.v*dt/1000;if(m.y<-.02){m.y=1.02;m.x=Math.random();}
+    const x=(m.x+Math.sin(t/2200+m.p)*.012)*w;
+    c.globalAlpha=.35+.35*Math.sin(t/700+m.p);c.beginPath();c.arc(x,m.y*h,m.s,0,7);c.fill();
+  }
+  c.globalAlpha=1;
+  // 下界
+  const R=Math.max(w*.8,560),eh=Math.min(118,h*.15),cx=w/2,cy=h+R-eh;
+  c.save();c.beginPath();c.arc(cx,cy,R,0,7);
+  c.shadowColor='rgba(255,255,255,.9)';c.shadowBlur=30;
+  const og=c.createRadialGradient(cx,cy-R*.4,R*.2,cx,cy,R);
+  og.addColorStop(0,mix(mx([86,170,226],[104,110,134],gloom),[40,60,120],duskK*.7));
+  og.addColorStop(1,mix(mx([48,120,196],[78,82,104],gloom),[24,36,90],duskK*.7));
+  c.fillStyle=og;c.fill();c.shadowBlur=0;c.clip();
+  c.fillStyle=mix(mx([122,196,120],[128,112,96],gloom),[50,90,84],duskK*.7);
+  const rot=t/90000;
+  for(let i=0;i<16;i++){
+    const a0=((i*.393+rot)%(Math.PI*2))-Math.PI;
+    if(Math.abs(a0)>.9)continue;
+    for(let j=0;j<4;j++){
+      c.beginPath();
+      const a=a0+Math.sin(i*3.1+j*2.2)*.03,rr=R*(.985-j*.022-.01*Math.sin(i*1.3+j));
+      c.ellipse(cx+Math.sin(a)*rr,cy-Math.cos(a)*rr,R*(.028+.016*Math.sin(i*1.7+j*1.9)),R*(.012+.006*Math.cos(i+j*2.5)),a+Math.sin(i+j)*.5,0,7);c.fill();
+    }
+  }
+  if(duskK>.3){c.fillStyle=`rgba(255,220,130,${(duskK-.3)*.9})`;for(let i=0;i<40;i++){const a=((i*.157+rot)%(Math.PI*2))-Math.PI;if(Math.abs(a)>.8)continue;const rr=R*(.95+.03*Math.sin(i*5));c.fillRect(cx+Math.sin(a)*rr,cy-Math.cos(a)*rr,2,2);}}
+  c.restore();
+  // 下界に積もる「結果」
+  const n=icons.length,span=Math.min(.11,w/R*.11);
+  c.textAlign='center';c.textBaseline='middle';
+  for(let i=0;i<n;i++){
+    const ic=icons[i];ic.k=Math.min(1,ic.k+dt/300);
+    const a=(i-(n-1)/2)*span,rr=R+13+Math.sin(t/500+i)*2.5,s=22*(.4+.6*ic.k)*(1+.5*(1-ic.k));
+    c.save();c.translate(cx+Math.sin(a)*rr,cy-Math.cos(a)*rr);c.rotate(a);
+    c.font=s+'px sans-serif';c.fillText(ic.e,0,0);c.restore();
+  }
+}
+function burst(x,y,col,n,sp){for(let i=0;i<n;i++){const a=rnd(0,6.3),v=rnd(.05,sp);parts.push({k:0,x,y,vx:Math.cos(a)*v,vy:Math.sin(a)*v-.05,l:0,m:rnd(300,650),c:col,s:rnd(1.5,4.5)});}}
+function sparkle(x,y,n){for(let i=0;i<n;i++){const a=rnd(0,6.3),v=rnd(.04,.3);parts.push({k:1,x,y,vx:Math.cos(a)*v,vy:Math.sin(a)*v-.12,l:0,m:rnd(450,900),c:'#f1d684',s:rnd(3,7)});}}
+function flyEmoji(e,x0,y0,x1,y1,cb){parts.push({k:2,e,x0,y0,x1,y1,l:0,m:520,cb});}
+function drawFx(dt){
+  const c=fxc;c.clearRect(0,0,W,H);
+  for(let i=parts.length-1;i>=0;i--){
+    const p=parts[i];p.l+=dt;const k=p.l/p.m;
+    if(k>=1){if(p.cb)p.cb();parts.splice(i,1);continue;}
+    if(p.k===2){
+      const e=1-Math.pow(1-k,3),x=lerp(p.x0,p.x1,e),y=lerp(p.y0,p.y1,e)-Math.sin(k*Math.PI)*60;
+      c.globalAlpha=Math.min(1,k*5);c.font=(22+Math.sin(k*Math.PI)*20)+'px sans-serif';c.textAlign='center';c.textBaseline='middle';c.fillText(p.e,x,y);
+      if(Math.random()<.5)parts.push({k:1,x,y,vx:rnd(-.03,.03),vy:rnd(0,.05),l:0,m:300,c:'#f1d684',s:rnd(2,4)});
+    }else{
+      p.x+=p.vx*dt;p.y+=p.vy*dt;p.vy+=.0006*dt;c.globalAlpha=1-k;c.fillStyle=p.c;
+      if(p.k===1){const s=p.s*(1-k*.5);c.beginPath();c.moveTo(p.x,p.y-s);c.lineTo(p.x+s*.3,p.y-s*.3);c.lineTo(p.x+s,p.y);c.lineTo(p.x+s*.3,p.y+s*.3);c.lineTo(p.x,p.y+s);c.lineTo(p.x-s*.3,p.y+s*.3);c.lineTo(p.x-s,p.y);c.lineTo(p.x-s*.3,p.y-s*.3);c.fill();}
+      else{c.beginPath();c.arc(p.x,p.y,p.s*(1-k*.6),0,7);c.fill();}
+    }
+  }
+  c.globalAlpha=1;
+}
+
+/* ═════════ 画面・UI ═════════ */
+const elTitle=$('#title'),elGame=$('#game'),elRes=$('#result'),stage=$('#stage'),cardsEl=$('#cards'),nl=$('#nl'),elFade=$('#fade');
+let state='title',cur=null,gone=[],shownPhase=1,warned={},toastT=0,hinted={};
+const fmt=n=>n.toLocaleString('en-US');
+function layout(){
+  W=innerWidth;H=innerHeight;DPR=Math.min(2,window.devicePixelRatio||1);
+  for(const cv of [bg,fx]){cv.width=W*DPR;cv.height=H*DPR;cv.getContext('2d').setTransform(DPR,0,0,DPR,0,0);}
+  const r=stage.getBoundingClientRect();
+  if(r.height>0){
+    const ch=clamp(r.height-26,250,500),cw=Math.min(350,r.width*.9,Math.max(ch*.76,270));
+    const st=document.documentElement.style;st.setProperty('--ch',ch+'px');st.setProperty('--cw',cw+'px');
+    TH=Math.min(120,cw*.34);
+    if(cur)setFs(cur);
+  }
+}
+function setFs(c){
+  const len=c.p.text.replace(/<[^>]+>/g,'').length,ch=parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--ch'))||470;
+  let fs=len>84?15.5:len>62?17:len>36?18.5:len>16?20.5:24;
+  if(ch<430)fs*=Math.max(.74,ch/440);
+  c.el.style.setProperty('--fs',fs.toFixed(1)+'px');
+}
+function show(s){for(const e of [elTitle,elGame,elRes])e.classList.remove('on');s.forEach(e=>e.classList.add('on'));}
+function toast(msg,ms){const t=$('#toast');t.innerHTML=msg;t.classList.add('on');clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove('on'),ms||2600);}
+function banner(b,s){const e=$('#banner');e.innerHTML=`<b>${b}</b><small>${s||''}</small>`;e.classList.remove('on');void e.offsetWidth;e.classList.add('on');}
+function shake(){stage.classList.remove('shake');void stage.offsetWidth;stage.classList.add('shake');}
+
+function mkCard(p){
+  const el=document.createElement('div');
+  el.className='card'+(p.cat==='内線'?' naisen':'')+(p.fin?' final':'')+(p.jirei?' jirei':'');
+  const tag=p.tag||(p.req&&p.cat!=='内線'?'関連案件':'');
+  const no=p.no||('受付 第'+fmt(8104332117+G.n)+'号');
+  el.innerHTML=`<div class="ch"><span class="cno">${no}</span><span class="cfm">${p.form||(p.cat==='内線'?'回覧・要決裁':'様式第七号')}</span><h3>${p.head||(p.cat==='内線'?'天界内線メモ':'祈願申請書')}</h3></div>`+
+  `<dl class="cm"><dt>${p.wl||(p.cat==='内線'?'発信者':'申請者')}</dt><dd>${p.who}</dd><dt>区分</dt><dd>${CATE[p.cat]||''} ${p.cat}${tag?`<b class="tag">${tag}</b>`:''}</dd></dl>`+
+  `<div class="cb"><p>${p.text}</p></div>`+
+  `<div class="cf"><span class="cfn">${p.note||'右へ：承認<br>左へ：却下'}</span><div class="hk"><i>担当</i><i class="done">課長</i><i>局長</i></div></div>`+
+  `<div class="stamp ok"><span>承認</span></div><div class="stamp ng"><span>却下</span></div><div class="tbar"><i></i></div>`;
+  return el;
+}
+function jireiCard(){
+  const again=SV.plays>0;
+  return {jirei:1,id:'_jirei',who:'あなた',wl:'宛先',cat:'人事',head:'辞令',form:'様式第一号',no:'天界人事局',
+    text:again?`あなたを、懲りずに<b>${SV.plays+1}度目の「神」</b>に任命する。<br>前回の評価：${SV.last||'—'}<br>研修：今回もなし`:'あなたを本日付で<b>「神」</b>に任命する。<br>配属：天界 祈願課 第三窓口<br>研修：なし',
+    note:'右へ：受諾<br>左へ：拒否'};
+}
+function finalCard(){
+  const ar=G.ok/Math.max(1,G.ok+G.ng);
+  const pre=G.t>=70?'神様もお疲れでしょうから、手短に書きます。':ar>=.66?'神様は、頼めばわりと聞いてくれると聞きました。':ar<=.34?'神様は、どうせ聞いてくれないと聞きました。それでも書きます。':'はじめて祈ります。書き方が合っているか分かりません。';
+  return {fin:1,id:'_final',who:'あなた（人間だった最後の夜）',cat:'未処理',tag:'保留 ∞',form:'宛先：神様',no:'受付 第0000000001号',
+    text:pre+'<br>お願いは一つだけです。生まれ変わったら、人の役に立つ仕事がしたいです。できれば、土日休みで。',
+    note:'承認：この仕事を「それ」と認める<br>却下：人間からやり直す'};
+}
+function deal(p){
+  if(state!=='play')return;
+  p=p||drawNext();
+  if(p.id&&p.id[0]!=='_'){SV.seen[p.id]=1;}
+  const el=mkCard(p);cardsEl.appendChild(el);
+  cur={el,p,x:0,y:70,r:0,s:.9,o:0,vx:0,vy:0,vr:0,mode:'enter',t:0,r0:rnd(-6,6),lock:false,tl:0,over:0,
+    ok:el.querySelector('.stamp.ok'),ng:el.querySelector('.stamp.ng'),bar:el.querySelector('.tbar i')};
+  setFs(cur);
+  if(G.phase===3&&!p.fin&&!p.jirei){cur.tl=TLIMIT;el.classList.add('timed');}
+  place(cur);SFX.deal();
+  if(p.fin)sparkle(W/2,stage.getBoundingClientRect().top+stage.clientHeight/2,26);
+  if(!hinted.first&&!p.jirei&&SV.plays===0){hinted.first=1;setTimeout(()=>toast('祈りを読んで、右へ承認／左へ却下。結果は「下界ニュース」で返ってきます',4200),500);}
+  if(!hinted.tag&&p.tag===KY&&SV.plays<2){hinted.tag=1;setTimeout(()=>toast('⚠ 競合申請：さっきの祈りと矛盾しています。組み合わせで結果が変わります',4200),400);}
+}
+function place(c){
+  c.el.style.transform=`translate(${c.x.toFixed(1)}px,${c.y.toFixed(1)}px) rotate(${c.r.toFixed(2)}deg) scale(${c.s.toFixed(3)})`;
+  c.el.style.opacity=c.o;
+  if(!c.lock){
+    const k=clamp(Math.abs(c.x)/TH,0,1);
+    c.ok.style.opacity=c.x>0?k*k:0;c.ng.style.opacity=c.x<0?k*k:0;
+    stage.dataset.dir=k>=1?(c.x>0?1:-1):0;
+  }
+}
+function stepCard(dt){
+  const c=cur;
+  if(c){
+    const s=dt/1000;
+    if(c.mode==='enter'){
+      c.t+=dt/380;const k=Math.min(1,c.t),q=k-1,e=1+2.2*q*q*q+1.2*q*q;
+      c.s=.9+.1*e;c.y=(1-e)*70;c.r=c.r0*(1-e);c.o=Math.min(1,k*3);
+      if(k>=1){c.mode='idle';c.s=1;c.y=0;c.r=0;}
+    }else if(c.mode==='spring'){
+      c.vx+=(-240*c.x-15*c.vx)*s;c.vy+=(-240*c.y-15*c.vy)*s;c.vr+=(-240*c.r-15*c.vr)*s;
+      c.x+=c.vx*s;c.y+=c.vy*s;c.r+=c.vr*s;c.s+=(1-c.s)*Math.min(1,s*14);
+      if(Math.abs(c.x)+Math.abs(c.y)+Math.abs(c.r)<.3&&Math.abs(c.vx)+Math.abs(c.vr)<4){c.x=c.y=c.r=0;c.mode='idle';}
+    }else if(c.mode==='slide'){
+      c.t+=dt/130;const k=Math.min(1,c.t),e=1-(1-k)*(1-k);
+      c.x=lerp(c.sx0,c.tx,e);c.r=c.x*.05;c.y=-8*e;
+      if(k>=1){c.mode='hold';const cb=c.cb;c.cb=null;cb();}
+    }
+    if(c.tl>0&&state==='play'&&!c.lock&&c.mode!=='enter'){
+      c.tl-=dt;const k=clamp(c.tl/TLIMIT,0,1);c.bar.style.transform=`scaleX(${k})`;
+      if(c.tl<3200&&!c.hurry){c.hurry=1;c.el.classList.add('hurry');SFX.warn();}
+      if(c.tl<=0){c.tl=0;commit(-1,true,true);}
+    }
+    if(cur===c)place(c);
+  }
+  for(let i=gone.length-1;i>=0;i--){
+    const g=gone[i];g.l+=dt;g.x+=g.vx*dt;g.y+=g.vy*dt;g.vy+=.003*dt;g.r+=g.vr*dt;
+    g.el.style.transform=`translate(${g.x}px,${g.y}px) rotate(${g.r}deg)`;g.el.style.opacity=clamp(1.5-g.l/300,0,1);
+    if(g.l>460){g.el.remove();gone.splice(i,1);}
+  }
+}
+/* ドラッグ */
+cardsEl.addEventListener('pointerdown',e=>{
+  const c=cur;if(!c||c.lock||state!=='play'||!c.el.contains(e.target)||c.mode==='slide')return;
+  audio();e.preventDefault();
+  c.mode='drag';c.pid=e.pointerId;c.gx=e.clientX-c.x;c.gy=e.clientY-c.y/.45;c.s=1.03;c.o=1;
+  const rc=c.el.getBoundingClientRect();c.piv=e.clientY<rc.top+rc.height*.55?1:-1;
+  c.hist=[[performance.now(),c.x]];c.over=0;
+  try{c.el.setPointerCapture(e.pointerId);}catch(_){}
+  c.el.classList.add('drag');SFX.grab();
+});
+cardsEl.addEventListener('pointermove',e=>{
+  const c=cur;if(!c||c.mode!=='drag'||e.pointerId!==c.pid)return;
+  c.x=e.clientX-c.gx;c.y=(e.clientY-c.gy)*.45;c.r=clamp(c.x*.055*c.piv,-22,22);
+  c.hist.push([performance.now(),c.x]);if(c.hist.length>6)c.hist.shift();
+  const ov=Math.abs(c.x)>=TH?Math.sign(c.x):0;
+  if(ov!==c.over){c.over=ov;if(ov){SFX.tick();if(navigator.vibrate)navigator.vibrate(8);}}
+});
+function dragEnd(e){
+  const c=cur;if(!c||c.mode!=='drag'||e.pointerId!==c.pid)return;
+  c.el.classList.remove('drag');
+  const h=c.hist,a=h[0],b=h[h.length-1],vx=b[0]>a[0]?(b[1]-a[1])/(b[0]-a[0]):0;
+  c.vx=vx*1000;c.vy=0;c.vr=0;
+  if(e.type!=='pointercancel'&&(Math.abs(c.x)>=TH||(Math.abs(vx)>.55&&Math.abs(c.x)>30&&Math.sign(vx)===Math.sign(c.x))))commit(Math.sign(c.x),false);
+  else{c.mode='spring';if(Math.abs(c.x)>20)SFX.whoosh();}
+}
+cardsEl.addEventListener('pointerup',dragEnd);cardsEl.addEventListener('pointercancel',dragEnd);
+
+function commit(dir,viaKey,timeout){
+  const c=cur;if(state!=='play'||!c||c.lock)return;
+  if(c.mode==='enter'&&c.t<.5)return;
+  audio();c.lock=true;c.el.classList.remove('drag');if(!c.p.jirei)$('#toast').classList.remove('on');
+  const go=()=>{
+    c.mode='hold';
+    const st=dir>0?c.ok:c.ng;(dir>0?c.ng:c.ok).style.opacity=0;
+    if(timeout)st.firstChild.textContent='時効';
+    st.style.opacity=1;st.classList.add('hit');stage.dataset.dir=0;
+    SFX.stamp();shake();if(navigator.vibrate)navigator.vibrate(18);
+    const r=st.getBoundingClientRect(),px=r.left+r.width/2,py=r.top+r.height/2;
+    burst(px,py,dir>0?'#c8372d':'#27325a',16,.42);if(dir>0)sparkle(px,py,7);
+    if(c.p.jirei&&dir<0){ // 拒否は却下される
+      SFX.deny();hinted.jr=(hinted.jr||0)+1;
+      toast(['※ 拒否権はありません','※ 本当にありません','※ 神に二言はありません（あなたのことです）'][Math.min(2,hinted.jr-1)],2200);
+      setTimeout(()=>{st.classList.remove('hit');st.style.opacity=0;c.lock=false;c.mode='spring';c.vx=900;},520);
+      return;
+    }
+    setTimeout(()=>{
+      gone.push({el:c.el,x:c.x,y:c.y,r:c.r,vx:dir*1.5+clamp(c.vx/1000,-1,1)*.5,vy:-.25,vr:dir*.09,l:0});
+      if(cur===c)cur=null;SFX.whoosh();
+      decided(c.p,dir>0,timeout);
+    },timeout?260:165);
+  };
+  if(viaKey){c.mode='slide';c.t=0;c.sx0=c.x;c.tx=dir*TH*1.08;c.cb=go;const b=$(dir>0?'#bOk':'#bNg');b.classList.add('pr');setTimeout(()=>b.classList.remove('pr'),140);}
+  else go();
+}
+$('#bOk').addEventListener('click',()=>commit(1,true));
+$('#bNg').addEventListener('click',()=>commit(-1,true));
+addEventListener('keydown',e=>{
+  if(e.repeat)return;
+  const k=e.key;
+  if(state==='title'&&(k==='Enter'||k===' ')){e.preventDefault();startGame();return;}
+  if(state==='end'&&k==='Enter'&&performance.now()-endedAt>1200){e.preventDefault();startGame();return;}
+  if(state!=='play')return;
+  if(k==='ArrowRight'||k==='d'||k==='D'){e.preventDefault();commit(1,true);}
+  else if(k==='ArrowLeft'||k==='a'||k==='A'){e.preventDefault();commit(-1,true);}
+});
+
+const ERE=/^(\p{Extended_Pictographic}(?:️|‍\p{Extended_Pictographic})*)\s*/u;
+function chips(d){
+  const L=['信仰','幸福','疲労'];let s='';
+  for(let i=0;i<3;i++)if(d[i]){const good=i===2?d[i]<0:d[i]>0;s+=`<i class="${good?'up':'dn'}">${L[i]}${d[i]>0?'+':'−'}${Math.abs(d[i])}</i>`;}
+  return s;
+}
+function pushNews(n){
+  const m=n.t.match(ERE),em=m?m[1]:'📰',tx=m?n.t.slice(m[0].length):n.t;
+  if(G)G.log.push({em,tx,combo:!!n.combo});
+  const r=nl.getBoundingClientRect();
+  flyEmoji(em,W/2+rnd(-80,80),H-36,r.left+24,r.top+24,()=>{
+    const e=nl.querySelector('.nempty');if(e)e.remove();
+    const li=document.createElement('li');if(n.combo)li.className='combo';
+    li.innerHTML=`<span class="ne">${em}</span><div class="nt"><p>${n.combo?'<b>続報</b>':''}${tx}</p><div class="chips">${chips(n.d||[0,0,0])}</div></div>`;
+    nl.insertBefore(li,nl.firstChild);while(nl.children.length>7)nl.lastChild.remove();
+    if(n.combo){SFX.combo();sparkle(r.left+24,r.top+24,12);}else SFX.news();
+    icons.push({e:em,k:0});if(icons.length>9)icons.shift();
+  });
+}
+function hud(d){
+  const set=(id,v,w)=>{const g=$(id);g.querySelector('.gb i').style.width=v+'%';g.querySelector('b').textContent=v;g.classList.toggle('warn',w);return g;};
+  const gs=[set('#gF',G.f,G.f<=15||G.f>=86),set('#gH',G.h,G.h<=15||G.h>=86),set('#gT',G.t,G.t>=78)];
+  if(d)d.forEach((v,i)=>{if(!v)return;const s=document.createElement('span'),good=i===2?v<0:v>0;s.className='dl '+(good?'up':'dn');s.textContent=(v>0?'+':'−')+Math.abs(v);gs[i].appendChild(s);setTimeout(()=>s.remove(),1100);});
+  $('#ava').textContent=G.t<30?'😇':G.t<55?'🙂':G.t<75?'😮‍💨':G.t<90?'😩':'😵';
+  document.body.classList.toggle('tired1',G.t>=62&&G.t<82);document.body.classList.toggle('tired2',G.t>=82);
+  $('#pn').textContent=Math.min(G.n,G.N);$('#cOk').textContent=G.ok;$('#cNg').textContent=G.ng;
+  $('#phn').textContent=G.n>=G.N?'受付終了':['','午前の部','午後の部','残業'][phaseOf(G.n)];
+  const ws=[[G.f<=15,'fl','⚠ 信仰が尽きかけています。忘れられると、神は消えます'],[G.f>=86,'fh','⚠ 信仰が過熱。これ以上あがめられると窓口がパンクします'],[G.h<=15,'hl','⚠ 下界が不幸のどん底です。このままでは世界が終わります'],[G.h>=86,'hh','⚠ 下界が幸せすぎます。誰も祈らなくなると、失業です'],[G.t>=78,'t','⚠ 疲労が限界です。承認（奇跡）は疲れます。却下は疲れません']];
+  for(const [c,k,m] of ws)if(c&&!warned[k]){warned[k]=1;SFX.warn();toast(m,3600);break;}
+}
+function decided(p,ok,timeout){
+  if(p.jirei){
+    pushNews({t:SV.plays>0?'📯 天界人事：第三窓口の新人神、再登板。課長「人手不足でねえ」':'📯 天界人事：第三窓口に新人神が着任。前任者は「もう無理です」と書き置きを残し失踪'});
+    setTimeout(()=>deal(),260);return;
+  }
+  if(p.fin){finalDecide(ok);return;}
+  const out=resolve(p,ok,timeout);
+  hud(out.d);
+  out.news.forEach((n,i)=>setTimeout(()=>pushNews(n),120+i*1150));
+  const tail=(out.news.length-1)*1150;
+  if(out.news.some(n=>n.combo)&&!hinted.combo){hinted.combo=1;setTimeout(()=>toast('🔗 連鎖！ あなたの決裁どうしが下界でぶつかりました',3200),tail+300);}
+  if(out.end){state='over';if(out.end==='neko'||out.end==='gappei')SFX.odd();setTimeout(()=>endSeq(out.end),tail+1700);return;}
+  if(G.n>=G.N){state='wait';setTimeout(finalSeq,tail+1000);return;}
+  const ph=phaseOf(G.n);
+  if(ph!==shownPhase){
+    shownPhase=ph;G.phase=ph;
+    setTimeout(()=>{
+      if(state!=='play')return;
+      SFX.chime(ph===2);bgmMode=ph===3?1:0;
+      if(ph===2)banner('午後の部','願いのスケールが大きくなります');
+      else{banner('残　業','窓口混雑中：迷っていると祈りが時効になります');}
+      $('#phn').textContent=['','午前の部','午後の部','残業'][ph];
+      setTimeout(()=>deal(),1500);
+    },350);
+  }else setTimeout(()=>deal(),240);
+}
+function finalSeq(){
+  bgmMode=2;duskT=1;document.body.classList.add('dusk');
+  SFX.chime(false);banner('受付終了','本日の窓口業務は終了しました');hud();
+  setTimeout(()=>toast('……あ。未処理の箱の底に、もう1件。',3000),2100);
+  setTimeout(()=>{state='play';deal(finalCard());},3700);
+}
+function finalDecide(ok){
+  state='over';G.finalOk=ok;
+  const id=finalEnding(ok);
+  elFade.querySelector('p').innerHTML=ok?'——受理されました。<br>あなたの願いは、<br>今日の仕事そのものでした。':'——却下されました。<br>理由：「土日休みではないため」。<br>では、人間からやり直しましょう。';
+  elFade.classList.add('on');if(ok)SFX.good();else SFX.chime(false);
+  setTimeout(()=>showEnding(id),3600);
+}
+function endSeq(id){shake();elFade.querySelector('p').innerHTML='';showEnding(id);}
+function tenseiText(){
+  return 'あなたは自分の祈りを却下し、退職届を出した。次の朝、あなたは人間として目を覚ます。'+
+    (G.h>=60?'そこは、あなたが一日かけて少しだけ良くした世界だった。':G.h<40?'そこは、あなたが一日で散らかした世界だった。自業自得である。':'そこは、昨日とだいたい同じ世界だった。')+
+    'やがてあなたは手を合わせる。——今度は、窓口のこちら側から。';
+}
+function showEnding(id){
+  state='end';bgmMode=-1;endedAt=performance.now();
+  const e=EN[id],isNew=!SV.ends[id],sc=scoreOf(id),fin=G.finalOk!==undefined;
+  const good=['meishin','mumei','yakunin','yes','no','tensei','shachiku','tatari'].includes(id);
+  SV.plays++;SV.ends[id]=1;SV.last=e.t;const rec=sc>SV.best;if(rec)SV.best=sc;save();
+  if(id==='neko'||id==='gappei')SFX.odd();else if(!fin)SFX.bad();
+  const seenN=PR.filter(p=>SV.seen[p.id]).length,endN=EORD.filter(k=>SV.ends[k]).length;
+  const lg=G.log.filter(l=>l.combo).slice(-2);
+  for(let i=G.log.length-1;i>=0&&lg.length<3;i--)if(!lg.includes(G.log[i])&&G.log[i].em!=='📯'&&G.log[i].em!=='⌛')lg.push(G.log[i]);
+  const bar=(l,v,c)=>`<span>${l}</span><div class="gb"><i style="width:${v}%;background:${c}"></i></div><b>${v}</b>`;
+  elRes.innerHTML=`<div class="sheet">
+   <div class="sh"><span>天界人事局 第${fmt(SV.plays)}号</span><h2>人事評価通知書</h2><small>${fin?'定時まで勤務':(id==='neko'||id==='gappei'?'特例終了（':'途中終了（')+G.n+'件目）'}</small></div>
+   <div class="rl"><div class="seal">${isNew?'新規<br>結末':good?'査定<br>済':'始末<br>書'}</div>
+     <div class="rart">${e.art}</div><div class="rk">あなたの称号</div><div class="rt">${e.t}</div>
+     <p class="rd">${id==='tensei'?tenseiText():e.d}</p><p class="rq">${e.k}</p></div>
+   <div class="rr">
+     <div class="rsc"><span>神格</span><div><b>${sc}</b> <small>点${rec?'（自己ベスト更新）':'／最高 '+SV.best}</small></div></div>
+     <div class="rs">${bar('🙏 信仰',G.f,'#7a5bb0')}${bar('🌏 幸福',G.h,'#3f9a6c')}${bar('💤 疲労',G.t,'#c98a2b')}</div>
+     <div class="rn"><div><b>${G.ok}</b>承認</div><div><b>${G.ng}</b>却下</div><div><b>${G.chain}</b>連鎖</div><div><b>${fin?(G.finalOk?'承認':'却下'):'—'}</b>自分の祈り</div></div>
+     <div class="dig"><h5>📺 下界ニュース・本日のまとめ</h5>${lg.map(l=>`<p>${l.em} ${l.tx}</p>`).join('')||'<p>特にありません</p>'}</div>
+     <div class="col"><h5>結末コレクション ${endN}/${EORD.length}　／　祈り図鑑 ${seenN}/${PR.length}</h5><div class="eg">${EORD.map(k=>`<i class="${SV.ends[k]?'got':''}${k===id?' now':''}" title="${SV.ends[k]?EN[k].t:'？'}">${SV.ends[k]?Array.from(EN[k].art.match(ERE)[1]).join(''):'？'}</i>`).join('')}</div></div>
+   </div>
+   <div class="rbtn"><button id="again">もう一度 出勤</button><button id="share">𝕏 でシェア</button></div></div>`;
+  elRes.scrollTop=0;elRes.classList.add('on');elFade.classList.remove('on');
+  const r=elRes.getBoundingClientRect();setTimeout(()=>sparkle(r.width/2,H*.3,good?30:8),350);
+  $('#again').onclick=()=>startGame();
+  $('#share').onclick=()=>{
+    const tx=`神様の受付窓口で1日働いた結果→【${e.t}】${e.s} 信仰${G.f}・幸福${G.h}・疲労${G.t}／承認${G.ok}件 却下${G.ng}件／神格${sc}点 #神様の受付窓口 #100個のバカゲー`;
+    window.open('https://twitter.com/intent/tweet?text='+encodeURIComponent(tx),'_blank','noopener');
+  };
+}
+let startedAt=-1e9,endedAt=0;
+function startGame(){
+  if(performance.now()-startedAt<600)return;startedAt=performance.now();
+  audio();newGame();
+  cardsEl.innerHTML='';gone=[];cur=null;parts.length=0;icons.length=0;warned={};hinted={};shownPhase=1;duskT=0;
+  document.body.classList.remove('dusk','tired1','tired2');elFade.classList.remove('on');
+  nl.innerHTML='<li class="nempty">下界は、いまのところ平穏です。<br>——あなたがハンコを押すまでは。</li>';
+  show([elGame]);state='play';layout();hud();
+  bgmMode=0;bstep=0;SFX.chime(true);
+  deal(jireiCard());
+  setTimeout(()=>{if(cur&&cur.p.jirei)toast('申請書を右へドラッグ（または <b>→</b> キー）して受諾',5000);},700);
+}
+function titleInfo(){
+  const seenN=PR.filter(p=>SV.seen[p.id]).length,endN=EORD.filter(k=>SV.ends[k]).length;
+  $('#rec').innerHTML=SV.plays?`前回の評価：<b>${SV.last}</b>　／　最高神格 ${SV.best}点<br>結末 ${endN}/${EORD.length}　・　祈り図鑑 ${seenN}/${PR.length}　・　出勤 ${SV.plays}回`:`祈り ${PR.length}種　・　結末 ${EORD.length}種　・　所要 約3分`;
+}
+$('#start').addEventListener('click',startGame);
+let waitN=8104332117,waitA=0,last=performance.now();
+function loop(now){
+  const dt=Math.min(50,now-last);last=now;
+  drawBg(now,dt);stepCard(dt);drawFx(dt);
+  if(state==='title'){waitA+=dt;if(waitA>130){waitA=0;waitN+=ri(1,9);$('#wait').textContent=fmt(waitN);}}
+  requestAnimationFrame(loop);
+}
+addEventListener('resize',layout);
+layout();titleInfo();requestAnimationFrame(loop);
+})();
+</script>
+</body>
+</html>
