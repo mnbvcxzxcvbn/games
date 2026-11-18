@@ -8,7 +8,7 @@ const tracked = new Set(require('child_process').execSync('git ls-files games', 
 const esc = s => s.replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 const done = games
   .map(g => ({ ...g, dir: `games/${String(g.id).padStart(3, '0')}-${g.slug}` }))
-  .filter(g => tracked.has(`${g.dir}/index.html`));
+  .filter(g => !g.wip && tracked.has(`${g.dir}/index.html`)); // wip: 仕上げ・検証が未完了のもの
 
 const cards = done.map(g => `
     <a class="card" href="${g.dir}/index.html">
